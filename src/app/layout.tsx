@@ -35,14 +35,12 @@ export default function RootLayout({
     <html lang="ru" suppressHydrationWarning>
       <body className={`${inter.className} bg-gradient-to-br from-gray-50 to-gray-100 antialiased`} suppressHydrationWarning>
         <ClientWrapper />
-        <UltraSmoothScroll>
-          <div className="min-h-screen flex flex-col">
-            <Navbar />
-            <main className="flex-1">
-              {children}
-            </main>
-          </div>
-        </UltraSmoothScroll>
+        <div className="min-h-screen flex flex-col">
+          <Navbar />
+          <main className="flex-1">
+            {children}
+          </main>
+        </div>
       </body>
     </html>
   );

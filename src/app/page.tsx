@@ -28,7 +28,7 @@ const popularDestinations = [
     id: 1,
     name: 'Париж',
     image: 'https://images.unsplash.com/photo-1502602898536-47ad22581b52?w=400&h=300&fit=crop&auto=format',
-    hotels: 2847,
+    hotels: 4206,
     rating: 4.8,
     description: 'Город света и романтики',
     country: 'Франция'
@@ -37,7 +37,7 @@ const popularDestinations = [
     id: 2,
     name: 'Токио',
     image: 'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=400&h=300&fit=crop&auto=format',
-    hotels: 1923,
+    hotels: 3806,
     rating: 4.9,
     description: 'Современная японская столица',
     country: 'Япония'
@@ -46,7 +46,7 @@ const popularDestinations = [
     id: 3,
     name: 'Нью-Йорк',
     image: 'https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?w=400&h=300&fit=crop&auto=format',
-    hotels: 3156,
+    hotels: 5206,
     rating: 4.7,
     description: 'Город, который никогда не спит',
     country: 'США'
@@ -55,7 +55,7 @@ const popularDestinations = [
     id: 4,
     name: 'Лондон',
     image: 'https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?w=400&h=300&fit=crop&auto=format',
-    hotels: 2341,
+    hotels: 3656,
     rating: 4.6,
     description: 'Историческая британская столица',
     country: 'Великобритания'
@@ -64,7 +64,7 @@ const popularDestinations = [
     id: 5,
     name: 'Дубай',
     image: 'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?w=400&h=300&fit=crop&auto=format',
-    hotels: 1876,
+    hotels: 2106,
     rating: 4.8,
     description: 'Роскошный город будущего',
     country: 'ОАЭ'
@@ -73,7 +73,7 @@ const popularDestinations = [
     id: 6,
     name: 'Рим',
     image: 'https://images.unsplash.com/photo-1552832230-c0197dd311b5?w=400&h=300&fit=crop&auto=format',
-    hotels: 1654,
+    hotels: 2856,
     rating: 4.7,
     description: 'Вечный город с богатой историей',
     country: 'Италия'
@@ -82,7 +82,7 @@ const popularDestinations = [
     id: 7,
     name: 'Бали',
     image: 'https://images.unsplash.com/photo-1537953773345-d172ccf13cf1?w=400&h=300&fit=crop&auto=format',
-    hotels: 987,
+    hotels: 1756,
     rating: 4.9,
     description: 'Тропический рай в Индонезии',
     country: 'Индонезия'
@@ -91,7 +91,7 @@ const popularDestinations = [
     id: 8,
     name: 'Сидней',
     image: 'https://images.unsplash.com/photo-1506973035872-a4ec16b8e8d9?w=400&h=300&fit=crop&auto=format',
-    hotels: 1234,
+    hotels: 1986,
     rating: 4.6,
     description: 'Жемчужина Австралии',
     country: 'Австралия'
@@ -508,6 +508,10 @@ export default function Home() {
                       <motion.button
                         className="flex items-center text-white hover:text-yellow-300 transition-colors"
                         whileHover={{ x: 5 }}
+                        onClick={() => {
+                          console.log('Клик по кнопке "Смотреть" для направления:', destination.name);
+                          console.log('Ссылка:', `/hotels?city=${encodeURIComponent(destination.name)}`);
+                        }}
                       >
                         <span className="text-sm mr-1">Смотреть</span>
                         <ArrowRight size={16} />
@@ -528,6 +532,10 @@ export default function Home() {
                 className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-8 py-4 rounded-xl font-semibold shadow-lg hover:from-indigo-700 hover:to-purple-700 transition-all"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
+                onClick={() => {
+                  console.log('Клик по кнопке "Посмотреть все направления"');
+                  console.log('Ссылка: /destinations');
+                }}
               >
                 Посмотреть все направления
               </motion.button>
