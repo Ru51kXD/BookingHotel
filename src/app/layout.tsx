@@ -10,11 +10,20 @@ const Navbar = dynamic(() => import('@/components/ui/Navbar'), {
   loading: () => <div className="h-20 bg-white/90 backdrop-blur-md fixed top-0 w-full z-50" />
 });
 
+// Оптимизированный скролл
+const OptimizedScroll = dynamic(() => import('@/components/ui/OptimizedScroll'));
+
+// Простой скролл для тестирования
+const SimpleScroll = dynamic(() => import('@/components/ui/SimpleScroll'));
+
+// Ультра-плавный скролл
+const UltraSmoothScroll = dynamic(() => import('@/components/ui/UltraSmoothScroll'));
+
 const inter = Inter({ subsets: ["latin", "cyrillic"] });
 
 export const metadata: Metadata = {
-  title: "Hotel Booking - Бронирование отелей и хостелов",
-  description: "Найдите и забронируйте идеальный отель или хостел для вашего путешествия",
+  title: "StayEasy - Мировое бронирование отелей | 100,000+ отелей в 190+ странах",
+  description: "Найдите и забронируйте идеальный отель в любой точке мира. Более 100,000 вариантов размещения в 190+ странах с лучшими ценами и гарантией качества.",
 };
 
 export default function RootLayout({
@@ -26,12 +35,14 @@ export default function RootLayout({
     <html lang="ru" suppressHydrationWarning>
       <body className={`${inter.className} bg-gradient-to-br from-gray-50 to-gray-100 antialiased`} suppressHydrationWarning>
         <ClientWrapper />
-        <div className="min-h-screen flex flex-col">
-          <Navbar />
-          <main className="flex-1">
-            {children}
-          </main>
-        </div>
+        <UltraSmoothScroll>
+          <div className="min-h-screen flex flex-col">
+            <Navbar />
+            <main className="flex-1">
+              {children}
+            </main>
+          </div>
+        </UltraSmoothScroll>
       </body>
     </html>
   );

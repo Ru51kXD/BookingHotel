@@ -11,12 +11,20 @@ export default function Navbar() {
 
   // Отслеживание скролла
   useEffect(() => {
+    let ticking = false;
+
     const handleScroll = () => {
-      const scrollPosition = window.scrollY;
-      setIsScrolled(scrollPosition > 50);
+      if (!ticking) {
+        requestAnimationFrame(() => {
+          const scrollPosition = window.scrollY;
+          setIsScrolled(scrollPosition > 50);
+          ticking = false;
+        });
+        ticking = true;
+      }
     };
 
-    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
@@ -55,7 +63,7 @@ export default function Navbar() {
   const menuItems = [
     { name: 'Главная', path: '/' },
     { name: 'Отели', path: '/hotels' },
-    { name: 'Хостелы', path: '/hostels' },
+    { name: 'Направления', path: '/destinations' },
     { name: 'О нас', path: '/about' },
     { name: 'Контакты', path: '/contacts' },
   ];

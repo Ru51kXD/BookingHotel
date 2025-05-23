@@ -122,7 +122,7 @@ export default function HotelSearch({ className = '' }: HotelSearchProps) {
           transition={{ delay: 0.1 }}
           className="text-gray-600"
         >
-          Более 80 отелей и хостелов в России
+          Более 100,000 отелей и хостелов по всему миру
         </motion.p>
       </div>
 
@@ -174,7 +174,7 @@ export default function HotelSearch({ className = '' }: HotelSearchProps) {
             <MapPin className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
             <input
               type="text"
-              placeholder="Город..."
+              placeholder="Страна или город..."
               value={selectedCity}
               onChange={(e) => setSelectedCity(e.target.value)}
               className="w-full pl-12 pr-4 py-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-gray-50/50 hover:bg-white"
