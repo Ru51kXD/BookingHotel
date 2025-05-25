@@ -165,7 +165,7 @@ export default function HostelsPage() {
   };
 
   return (
-    <>
+    <div className="pt-24">
       <Navbar />
       
       {/* Hero Section с параллакс эффектом */}
@@ -612,6 +612,7 @@ export default function HostelsPage() {
                   <HotelCard
                     key={hostel.id}
                     {...hostel}
+                    category="budget"
                     index={index}
                   />
                 ))}
@@ -659,6 +660,6 @@ export default function HostelsPage() {
       </motion.section>
       
       <Footer />
-    </>
+    </div>
   );
 } 

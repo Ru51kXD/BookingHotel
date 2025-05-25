@@ -2,148 +2,87 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
-// Типы валют
-export type Currency = 'rub' | 'kzt' | 'usd' | 'eur';
-
-// Информация о валютах
-export interface CurrencyInfo {
-  code: Currency;
-  symbol: string;
+export interface Currency {
+  code: string;
   name: string;
-  rate: number; // Курс к базовой валюте (KZT)
+  symbol: string;
+  rate: number; // Rate relative to base currency (KZT)
 }
 
-// Конфигурация валют (курсы относительно тенге)
-export const CURRENCIES: Record<Currency, CurrencyInfo> = {
-  kzt: {
-    code: 'kzt',
-    symbol: '₸',
-    name: 'Казахстанский тенге',
-    rate: 1 // Базовая валюта
-  },
-  rub: {
-    code: 'rub',
-    symbol: '₽',
-    name: 'Российский рубль',
-    rate: 0.22 // 1 рубль = 0.22 тенге (примерный курс)
-  },
-  usd: {
-    code: 'usd',
-    symbol: '$',
-    name: 'Доллар США',
-    rate: 450 // 1 доллар = 450 тенге (примерный курс)
-  },
-  eur: {
-    code: 'eur',
-    symbol: '€',
-    name: 'Евро',
-    rate: 485 // 1 евро = 485 тенге (примерный курс)
-  }
-};
+export const currencies: Currency[] = [
+  { code: 'KZT', name: 'Казахстанский тенге', symbol: '₸', rate: 1 },
+  { code: 'RUB', name: 'Российский рубль', symbol: '₽', rate: 0.22 },
+  { code: 'USD', name: 'Доллар США', symbol: '$', rate: 0.0022 },
+  { code: 'EUR', name: 'Евро', symbol: '€', rate: 0.0020 }
+];
 
-// Интерфейс контекста валют
 interface CurrencyContextType {
-  currency: Currency;
-  setCurrency: (currency: Currency) => void;
-  convertPrice: (price: number, fromCurrency?: Currency) => number;
-  formatPrice: (price: number, fromCurrency?: Currency) => string;
-  getCurrencyInfo: (currency?: Currency) => CurrencyInfo;
+  currency: string;
+  currencies: Currency[];
+  formatPrice: (amount: number) => string;
+  convertPrice: (amount: number, fromCurrency?: string) => number;
+  setCurrency: (code: string) => void;
+  getCurrencyInfo: (code?: string) => Currency;
 }
 
-// Создаем контекст
 const CurrencyContext = createContext<CurrencyContextType | undefined>(undefined);
 
-// Провайдер контекста валют
-interface CurrencyProviderProps {
-  children: ReactNode;
-}
+export function CurrencyProvider({ children }: { children: ReactNode }) {
+  const [currency, setCurrencyState] = useState<string>('KZT'); // По умолчанию тенге
 
-export function CurrencyProvider({ children }: CurrencyProviderProps) {
-  const [currency, setCurrency] = useState<Currency>('kzt'); // По умолчанию тенге
-
-  // Загружаем валюту из localStorage при инициализации
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const savedSettings = localStorage.getItem('userPreferences');
-      if (savedSettings) {
-        try {
-          const parsed = JSON.parse(savedSettings);
-          if (parsed.preferences?.currency) {
-            setCurrency(parsed.preferences.currency);
-          }
-        } catch (error) {
-          console.log('Ошибка при загрузке валюты:', error);
-        }
-      }
+    // Загружаем сохраненную валюту из localStorage
+    const savedCurrency = localStorage.getItem('selected_currency');
+    if (savedCurrency && currencies.find(c => c.code === savedCurrency)) {
+      setCurrencyState(savedCurrency);
     }
   }, []);
 
-  // Сохраняем валюту в localStorage при изменении
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const savedSettings = localStorage.getItem('userPreferences');
-      let settings = {};
-      
-      if (savedSettings) {
-        try {
-          settings = JSON.parse(savedSettings);
-        } catch (error) {
-          console.log('Ошибка при парсинге настроек:', error);
-        }
-      }
+  const setCurrency = (code: string) => {
+    setCurrencyState(code);
+    localStorage.setItem('selected_currency', code);
+  };
 
-      const updatedSettings = {
-        ...settings,
-        preferences: {
-          ...((settings as any).preferences || {}),
-          currency
-        }
-      };
+  const getCurrencyInfo = (code?: string): Currency => {
+    const currencyCode = code || currency;
+    return currencies.find(c => c.code === currencyCode) || currencies[0]; // KZT as fallback
+  };
 
-      localStorage.setItem('userPreferences', JSON.stringify(updatedSettings));
-    }
-  }, [currency]);
-
-  // Конвертирует цену из одной валюты в текущую
-  const convertPrice = (price: number, fromCurrency: Currency = 'rub'): number => {
-    if (fromCurrency === currency) return price;
-
-    // Конвертируем в тенге (базовая валюта)
-    const priceInKzt = price / CURRENCIES[fromCurrency].rate;
+  const convertPrice = (amount: number, fromCurrency: string = 'KZT'): number => {
+    const fromCurr = currencies.find(c => c.code === fromCurrency);
+    const toCurr = getCurrencyInfo();
     
-    // Конвертируем из тенге в целевую валюту
-    return Math.round(priceInKzt * CURRENCIES[currency].rate);
-  };
-
-  // Форматирует цену с символом валюты
-  const formatPrice = (price: number, fromCurrency: Currency = 'rub'): string => {
-    const convertedPrice = convertPrice(price, fromCurrency);
-    const currencyInfo = CURRENCIES[currency];
+    if (!fromCurr || !toCurr) return amount;
     
-    return `${convertedPrice.toLocaleString('ru-RU')}${currencyInfo.symbol}`;
+    // Convert to base currency (KZT) first, then to target currency
+    const amountInKZT = amount / fromCurr.rate;
+    return amountInKZT * toCurr.rate;
   };
 
-  // Получает информацию о валюте
-  const getCurrencyInfo = (targetCurrency?: Currency): CurrencyInfo => {
-    return CURRENCIES[targetCurrency || currency];
-  };
-
-  const value = {
-    currency,
-    setCurrency,
-    convertPrice,
-    formatPrice,
-    getCurrencyInfo
+  const formatPrice = (amount: number, fromCurrency: string = 'KZT'): string => {
+    const convertedAmount = convertPrice(amount, fromCurrency);
+    const currencyInfo = getCurrencyInfo();
+    
+    return `${convertedAmount.toLocaleString('ru-RU', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    })} ${currencyInfo.symbol}`;
   };
 
   return (
-    <CurrencyContext.Provider value={value}>
+    <CurrencyContext.Provider value={{
+      currency,
+      currencies,
+      formatPrice,
+      convertPrice,
+      setCurrency,
+      getCurrencyInfo
+    }}>
       {children}
     </CurrencyContext.Provider>
   );
 }
 
-// Хук для использования контекста валют
 export function useCurrency() {
   const context = useContext(CurrencyContext);
   if (context === undefined) {
@@ -155,26 +94,32 @@ export function useCurrency() {
 // Утилитарные функции для работы с валютами
 export const CurrencyUtils = {
   // Получить все доступные валюты
-  getAllCurrencies: (): CurrencyInfo[] => {
-    return Object.values(CURRENCIES);
+  getAllCurrencies: (): Currency[] => {
+    return currencies;
   },
 
   // Конвертировать цену без контекста
-  convertPrice: (price: number, from: Currency, to: Currency): number => {
+  convertPrice: (price: number, from: string, to: string): number => {
     if (from === to) return price;
     
     // Конвертируем в тенге
-    const priceInKzt = price / CURRENCIES[from].rate;
+    const priceInKzt = price / currencies.find(c => c.code === from)?.rate || 1;
     
     // Конвертируем в целевую валюту
-    return Math.round(priceInKzt * CURRENCIES[to].rate);
+    const toCurr = currencies.find(c => c.code === to);
+    if (!toCurr) return price;
+    
+    return Math.round(priceInKzt * toCurr.rate);
   },
 
   // Форматировать цену без контекста
-  formatPrice: (price: number, currency: Currency, fromCurrency: Currency = 'rub'): string => {
+  formatPrice: (price: number, currency: string, fromCurrency: string = 'KZT'): string => {
     const convertedPrice = CurrencyUtils.convertPrice(price, fromCurrency, currency);
-    const currencyInfo = CURRENCIES[currency];
+    const currencyInfo = currencies.find(c => c.code === currency) || currencies[0]; // KZT as fallback
     
-    return `${convertedPrice.toLocaleString('ru-RU')}${currencyInfo.symbol}`;
+    return `${convertedPrice.toLocaleString('ru-RU', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    })} ${currencyInfo.symbol}`;
   }
 }; 

@@ -63,7 +63,8 @@ export class BookingService {
     bookingData: BookingData
   ): Promise<{ success: boolean; booking?: Booking; error?: string }> {
     try {
-      const bookingId = `booking_${Math.random().toString(36).substr(2, 9)}`;
+      // Используем более уникальный ID с timestamp для избежания конфликтов
+      const bookingId = `booking_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
       const totalPrice = this.calculateTotalPrice(bookingData);
 
       const booking: Booking = {
@@ -82,13 +83,26 @@ export class BookingService {
         updated_at: new Date().toISOString()
       };
 
-      bookings.set(bookingId, booking);
-      
-      // Сохраняем в localStorage
+      // Сохраняем только в localStorage, убираем дублирование с Map
       if (typeof window !== 'undefined') {
-        const userBookings = this.getUserBookings(user.id);
-        localStorage.setItem(`bookings_${user.id}`, JSON.stringify([...userBookings, booking]));
+        const existingBookings = this.getUserBookings(user.id);
+        // Проверяем, что такого бронирования еще нет
+        const isDuplicate = existingBookings.some(existing => 
+          existing.hotel.id === booking.hotel.id &&
+          existing.checkIn === booking.checkIn &&
+          existing.checkOut === booking.checkOut &&
+          existing.userId === booking.userId
+        );
+        
+        if (isDuplicate) {
+          return { success: false, error: 'Бронирование уже существует' };
+        }
+        
+        localStorage.setItem(`bookings_${user.id}`, JSON.stringify([...existingBookings, booking]));
       }
+      
+      // Сохраняем в Map только для быстрого доступа
+      bookings.set(bookingId, booking);
 
       return { success: true, booking };
     } catch (error) {

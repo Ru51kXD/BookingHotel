@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from '@/lib/motion';
-import { Menu, X, User, Search, LogOut, Calendar, CreditCard } from 'lucide-react';
+import { Menu, X, User, Search, LogOut, Calendar, CreditCard, Settings } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
 import LoginModal from '@/components/auth/LoginModal';
 import RegisterModal from '@/components/auth/RegisterModal';
@@ -108,7 +108,7 @@ export default function Navbar() {
         className={`fixed top-0 z-50 w-full transition-all duration-500 ${
           isScrolled 
             ? 'bg-white/98 backdrop-blur-xl shadow-xl border-b border-gray-200/80' 
-            : 'bg-white/15 backdrop-blur-md shadow-md border-b border-white/20'
+            : 'bg-white/95 backdrop-blur-md shadow-lg border-b border-gray-200/50'
         }`}
       >
         <div className="container mx-auto px-4 py-4">
@@ -117,7 +117,7 @@ export default function Navbar() {
               variants={logoVariants}
               whileHover="hover"
               className={`text-2xl font-bold transition-colors duration-300 ${
-                isScrolled ? 'text-indigo-600' : 'text-white'
+                isScrolled ? 'text-indigo-600' : 'text-indigo-600'
               }`}
             >
               <Link href="/" className="flex items-center gap-2">
@@ -153,12 +153,12 @@ export default function Navbar() {
                     className={`transition-all duration-300 font-medium relative group ${
                       isScrolled 
                         ? 'text-gray-700 hover:text-indigo-600' 
-                        : 'text-white/90 hover:text-white'
+                        : 'text-gray-700 hover:text-indigo-600'
                     }`}
                   >
                     {item.name}
                     <span className={`absolute -bottom-1 left-0 w-0 h-0.5 transition-all duration-300 group-hover:w-full ${
-                      isScrolled ? 'bg-indigo-600' : 'bg-white'
+                      isScrolled ? 'bg-indigo-600' : 'bg-indigo-600'
                     }`}></span>
                   </Link>
                 </motion.div>
@@ -175,7 +175,7 @@ export default function Navbar() {
                   className={`flex items-center gap-2 transition-all duration-300 px-4 py-2 rounded-lg ${
                     isScrolled 
                       ? 'text-gray-700 hover:text-indigo-600 hover:bg-indigo-50' 
-                      : 'text-white/90 hover:text-white hover:bg-white/10'
+                      : 'text-gray-700 hover:text-indigo-600 hover:bg-indigo-50'
                   }`}
                 >
                   <Search size={20} />
@@ -195,7 +195,7 @@ export default function Navbar() {
                     className={`flex items-center gap-2 transition-all duration-300 px-4 py-2 rounded-lg ${
                       isScrolled 
                         ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:from-indigo-700 hover:to-purple-700 shadow-md hover:shadow-lg' 
-                        : 'bg-white/20 text-white hover:bg-white/30 backdrop-blur-sm border border-white/30'
+                        : 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:from-indigo-700 hover:to-purple-700 shadow-md hover:shadow-lg'
                     }`}
                   >
                     <div className="w-6 h-6 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
@@ -225,17 +225,35 @@ export default function Navbar() {
                         <div className="px-4 py-3 border-b border-gray-100">
                           <p className="font-semibold text-gray-900">{user.name}</p>
                           <p className="text-sm text-gray-600">{user.email}</p>
+                          {user.role === 'admin' && (
+                            <span className="inline-block mt-1 px-2 py-1 bg-red-100 text-red-800 text-xs font-medium rounded-full">
+                              Администратор
+                            </span>
+                          )}
                         </div>
                         
                         <div className="py-2">
-                          <Link 
-                            href="/account"
-                            onClick={() => setShowUserMenu(false)}
-                            className="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-50 transition-colors"
-                          >
-                            <User className="w-4 h-4 mr-3" />
-                            Личный кабинет
-                          </Link>
+                          {/* Главная ссылка - для админа Админ-панель, для пользователя Личный кабинет */}
+                          {user.role === 'admin' ? (
+                            <Link 
+                              href="/admin"
+                              onClick={() => setShowUserMenu(false)}
+                              className="flex items-center px-4 py-2 text-red-600 hover:bg-red-50 transition-colors font-medium"
+                            >
+                              <Settings className="w-4 h-4 mr-3" />
+                              Админ-панель
+                            </Link>
+                          ) : (
+                            <Link 
+                              href="/account"
+                              onClick={() => setShowUserMenu(false)}
+                              className="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-50 transition-colors"
+                            >
+                              <User className="w-4 h-4 mr-3" />
+                              Личный кабинет
+                            </Link>
+                          )}
+                          
                           <Link 
                             href="/account/bookings"
                             onClick={() => setShowUserMenu(false)}
@@ -276,7 +294,7 @@ export default function Navbar() {
                     className={`transition-all duration-300 px-4 py-2 rounded-lg font-medium ${
                       isScrolled 
                         ? 'text-gray-700 hover:text-indigo-600 hover:bg-indigo-50' 
-                        : 'text-white/90 hover:text-white hover:bg-white/10'
+                        : 'text-gray-700 hover:text-indigo-600 hover:bg-indigo-50'
                     }`}
                   >
                     Войти
@@ -288,7 +306,7 @@ export default function Navbar() {
                     className={`flex items-center gap-2 transition-all duration-300 px-4 py-2 rounded-lg font-medium ${
                       isScrolled 
                         ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:from-indigo-700 hover:to-purple-700 shadow-md hover:shadow-lg' 
-                        : 'bg-white/20 text-white hover:bg-white/30 backdrop-blur-sm border border-white/30'
+                        : 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:from-indigo-700 hover:to-purple-700 shadow-md hover:shadow-lg'
                     }`}
                   >
                     <User size={20} />
@@ -306,7 +324,7 @@ export default function Navbar() {
                 className={`p-2 rounded-lg transition-colors duration-300 ${
                   isScrolled 
                     ? 'text-gray-700 hover:bg-gray-100' 
-                    : 'text-white hover:bg-white/10'
+                    : 'text-gray-700 hover:bg-gray-100'
                 }`}
               >
                 {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
@@ -326,7 +344,7 @@ export default function Navbar() {
               className={`md:hidden border-t backdrop-blur-xl ${
                 isScrolled 
                   ? 'bg-white/95 border-gray-200' 
-                  : 'bg-white/10 border-white/20'
+                  : 'bg-white/95 border-gray-200'
               }`}
             >
               <div className="container mx-auto px-4 py-4 flex flex-col space-y-4">
@@ -343,7 +361,7 @@ export default function Navbar() {
                       className={`block py-3 px-4 rounded-lg transition-colors duration-300 ${
                         isScrolled 
                           ? 'text-gray-700 hover:text-indigo-600 hover:bg-indigo-50' 
-                          : 'text-white/90 hover:text-white hover:bg-white/10'
+                          : 'text-gray-700 hover:text-indigo-600 hover:bg-indigo-50'
                       }`}
                       onClick={() => setIsMenuOpen(false)}
                     >
@@ -352,7 +370,7 @@ export default function Navbar() {
                   </motion.div>
                 ))}
                 <div className={`pt-4 border-t flex flex-col space-y-4 ${
-                  isScrolled ? 'border-gray-200' : 'border-white/20'
+                  isScrolled ? 'border-gray-200' : 'border-gray-200'
                 }`}>
                   <Link href="/hotels">
                     <motion.button
@@ -360,7 +378,7 @@ export default function Navbar() {
                       className={`flex items-center gap-3 w-full text-left py-3 px-4 rounded-lg transition-colors duration-300 ${
                         isScrolled 
                           ? 'text-gray-700 hover:text-indigo-600 hover:bg-indigo-50' 
-                          : 'text-white/90 hover:text-white hover:bg-white/10'
+                          : 'text-gray-700 hover:text-indigo-600 hover:bg-indigo-50'
                       }`}
                       onClick={() => setIsMenuOpen(false)}
                     >
@@ -384,76 +402,91 @@ export default function Navbar() {
                           )}
                         </div>
                         <div>
-                          <p className={`font-semibold ${isScrolled ? 'text-gray-900' : 'text-white'}`}>{user.name}</p>
-                          <p className={`text-sm ${isScrolled ? 'text-gray-600' : 'text-white/70'}`}>{user.email}</p>
+                          <p className="font-semibold text-gray-900">{user.name}</p>
+                          <p className="text-sm text-gray-600">{user.email}</p>
                         </div>
                       </div>
                       
-                      <Link 
-                        href="/account"
-                        className={`block py-3 px-4 rounded-lg transition-colors duration-300 ${
-                          isScrolled 
-                            ? 'text-gray-700 hover:text-indigo-600 hover:bg-indigo-50' 
-                            : 'text-white/90 hover:text-white hover:bg-white/10'
-                        }`}
-                        onClick={() => setIsMenuOpen(false)}
-                      >
-                        Личный кабинет
+                      {/* Главная ссылка для мобильной версии */}
+                      {user.role === 'admin' ? (
+                        <Link 
+                          href="/admin"
+                          onClick={() => setIsMenuOpen(false)}
+                          className="flex items-center gap-3 w-full text-left py-3 px-4 rounded-lg bg-red-50 text-red-600 font-medium transition-colors"
+                        >
+                          <Settings size={20} />
+                          <span>Админ-панель</span>
+                        </Link>
+                      ) : (
+                        <Link href="/account">
+                          <motion.button
+                            whileTap={{ scale: 0.95 }}
+                            className={`flex items-center gap-3 w-full text-left py-3 px-4 rounded-lg transition-colors duration-300 ${
+                              isScrolled 
+                                ? 'text-gray-700 hover:text-indigo-600 hover:bg-indigo-50' 
+                                : 'text-gray-700 hover:text-indigo-600 hover:bg-indigo-50'
+                            }`}
+                            onClick={() => setIsMenuOpen(false)}
+                          >
+                            <User size={20} />
+                            <span>Личный кабинет</span>
+                          </motion.button>
+                        </Link>
+                      )}
+                      
+                      <Link href="/account/bookings">
+                        <motion.button
+                          whileTap={{ scale: 0.95 }}
+                          className={`flex items-center gap-3 w-full text-left py-3 px-4 rounded-lg transition-colors duration-300 ${
+                            isScrolled 
+                              ? 'text-gray-700 hover:text-indigo-600 hover:bg-indigo-50' 
+                              : 'text-gray-700 hover:text-indigo-600 hover:bg-indigo-50'
+                          }`}
+                          onClick={() => setIsMenuOpen(false)}
+                        >
+                          <Calendar size={20} />
+                          <span>Мои бронирования</span>
+                        </motion.button>
                       </Link>
-                      <Link 
-                        href="/account/bookings"
-                        className={`block py-3 px-4 rounded-lg transition-colors duration-300 ${
-                          isScrolled 
-                            ? 'text-gray-700 hover:text-indigo-600 hover:bg-indigo-50' 
-                            : 'text-white/90 hover:text-white hover:bg-white/10'
-                        }`}
-                        onClick={() => setIsMenuOpen(false)}
+                      <motion.button
+                        whileTap={{ scale: 0.95 }}
+                        onClick={handleLogout}
+                        className="flex items-center gap-3 w-full text-left py-3 px-4 rounded-lg text-red-600 hover:bg-red-50 transition-colors duration-300"
                       >
-                        Мои бронирования
-                      </Link>
-                      <button
-                        onClick={() => {
-                          handleLogout();
-                          setIsMenuOpen(false);
-                        }}
-                        className={`block w-full text-left py-3 px-4 rounded-lg transition-colors duration-300 ${
-                          isScrolled 
-                            ? 'text-red-600 hover:text-red-700 hover:bg-red-50' 
-                            : 'text-red-300 hover:text-red-200 hover:bg-red-500/20'
-                        }`}
-                      >
-                        Выйти
-                      </button>
+                        <LogOut size={20} />
+                        <span>Выйти</span>
+                      </motion.button>
                     </div>
                   ) : (
                     <div className="space-y-3">
-                      <button
+                      <motion.button
+                        whileTap={{ scale: 0.95 }}
                         onClick={() => {
                           setShowLoginModal(true);
                           setIsMenuOpen(false);
                         }}
-                        className={`block w-full text-left py-3 px-4 rounded-lg transition-colors duration-300 ${
+                        className={`w-full py-3 px-4 rounded-lg transition-colors duration-300 ${
                           isScrolled 
                             ? 'text-gray-700 hover:text-indigo-600 hover:bg-indigo-50' 
-                            : 'text-white/90 hover:text-white hover:bg-white/10'
+                            : 'text-gray-700 hover:text-indigo-600 hover:bg-indigo-50'
                         }`}
                       >
                         Войти
-                      </button>
-                      <button
+                      </motion.button>
+                      <motion.button
+                        whileTap={{ scale: 0.95 }}
                         onClick={() => {
                           setShowRegisterModal(true);
                           setIsMenuOpen(false);
                         }}
-                        className={`flex items-center gap-3 w-full text-left py-3 px-4 rounded-lg transition-colors duration-300 ${
+                        className={`w-full py-3 px-4 rounded-lg transition-colors duration-300 font-medium ${
                           isScrolled 
                             ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:from-indigo-700 hover:to-purple-700' 
-                            : 'bg-white/20 text-white hover:bg-white/30 border border-white/30'
+                            : 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:from-indigo-700 hover:to-purple-700'
                         }`}
                       >
-                        <User size={20} />
-                        <span>Регистрация</span>
-                      </button>
+                        Регистрация
+                      </motion.button>
                     </div>
                   )}
                 </div>
@@ -463,7 +496,7 @@ export default function Navbar() {
         </AnimatePresence>
       </motion.header>
 
-      {/* Auth Modals */}
+      {/* Login Modal */}
       <LoginModal 
         isOpen={showLoginModal}
         onClose={() => setShowLoginModal(false)}
@@ -473,6 +506,7 @@ export default function Navbar() {
         }}
       />
 
+      {/* Register Modal */}
       <RegisterModal 
         isOpen={showRegisterModal}
         onClose={() => setShowRegisterModal(false)}
@@ -483,4 +517,4 @@ export default function Navbar() {
       />
     </>
   );
-} 
+}

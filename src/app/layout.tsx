@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import ClientWrapper from '@/components/ui/ClientWrapper';
-import { CurrencyProvider } from '@/lib/currency';
+import AppProviders from '@/components/providers/AppProviders';
 import dynamic from 'next/dynamic';
 
 // Динамический импорт навбара
@@ -35,7 +35,7 @@ export default function RootLayout({
   return (
     <html lang="ru" suppressHydrationWarning>
       <body className={`${inter.className} bg-gradient-to-br from-gray-50 to-gray-100 antialiased`} suppressHydrationWarning>
-        <CurrencyProvider>
+        <AppProviders>
           <ClientWrapper />
           <div className="min-h-screen flex flex-col">
             <Navbar />
@@ -43,7 +43,7 @@ export default function RootLayout({
               {children}
             </main>
           </div>
-        </CurrencyProvider>
+        </AppProviders>
       </body>
     </html>
   );

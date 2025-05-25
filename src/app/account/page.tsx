@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '@/lib/auth';
 import { useBooking } from '@/lib/booking';
 import { usePayments } from '@/lib/payments';
+import { useCurrency } from '@/lib/currency';
 import { motion } from '@/lib/motion';
 import Link from 'next/link';
 import { 
@@ -26,6 +27,7 @@ export default function AccountPage() {
   const { user, logout, isLoading: authLoading } = useAuth();
   const { bookings, loadUserBookings } = useBooking();
   const { cards, loadUserCards } = usePayments();
+  const { formatPrice } = useCurrency();
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showRegisterModal, setShowRegisterModal] = useState(false);
 
@@ -260,7 +262,7 @@ export default function AccountPage() {
                     <TrendingUp className="w-6 h-6 text-purple-600" />
                   </div>
                   <span className="text-2xl font-bold text-gray-900">
-                    {totalSpent.toLocaleString()}₽
+                    {formatPrice(totalSpent)}
                   </span>
                 </div>
                 <h3 className="font-semibold text-gray-900">Общая сумма</h3>

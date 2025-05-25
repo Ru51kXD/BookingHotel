@@ -16,10 +16,8 @@ import {
 } from 'lucide-react';
 
 // Динамический импорт компонентов
-const Navbar = dynamic(() => import('@/components/ui/Navbar'), { ssr: true });
-const Footer = dynamic(() => import('@/components/ui/Footer'), { ssr: true });
-const HotelCard = dynamic(() => import('@/components/hotel/HotelCard'), { ssr: true });
-const ParallaxBackground = dynamic(() => import('@/components/ui/ParallaxBackground'), { ssr: false });
+const HotelCard = dynamic(() => import('@/components/HotelCard'), { ssr: true });
+const HotelMap = dynamic(() => import('@/components/HotelMap'), { ssr: true });
 
 // Расширенные данные для поиска с заглушками изображений
 const allResults = [
@@ -140,74 +138,95 @@ function SearchPageContent() {
   
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
   const [isLoading, setIsLoading] = useState(false);
-  const [searchResults, setSearchResults] = useState(allResults);
+  const [searchResults, setSearchResults] = useState<any[]>([]);
 
   // Получаем параметры из URL
   useEffect(() => {
     if (searchParams) {
+      const destination = searchParams.get('destination') || '';
       setSearchFilters(prev => ({
         ...prev,
-        destination: searchParams.get('destination') || '',
+        destination: destination,
         checkIn: searchParams.get('checkIn') || '',
         checkOut: searchParams.get('checkOut') || '',
         guests: parseInt(searchParams.get('guests') || '1')
       }));
+      
+      // Если есть destination, сразу ищем
+      if (destination) {
+        searchHotels(destination);
+      }
     }
   }, [searchParams]);
 
-  // Фильтрация результатов
-  useEffect(() => {
-    let filtered = [...allResults];
-
-    // Фильтр по городу
-    if (searchFilters.destination) {
-      filtered = filtered.filter(item => 
-        item.city.toLowerCase().includes(searchFilters.destination.toLowerCase()) ||
-        item.name.toLowerCase().includes(searchFilters.destination.toLowerCase())
-      );
+  // Функция поиска отелей через API
+  const searchHotels = async (query: string = searchFilters.destination) => {
+    console.log('🔍 Searching for:', query);
+    setIsLoading(true);
+    try {
+      const response = await fetch(`/api/hotels?q=${encodeURIComponent(query)}`);
+      console.log('📡 Response status:', response.status);
+      if (response.ok) {
+        const result = await response.json();
+        console.log('📦 API Result:', result);
+        console.log('🏨 Hotels count:', result.data?.length || 0);
+        // API возвращает {success: true, data: [...], count: number}
+        setSearchResults(result.data || []);
+      } else {
+        console.error('Error fetching hotels:', response.status);
+        setSearchResults([]);
+      }
+    } catch (error) {
+      console.error('Error searching hotels:', error);
+      setSearchResults([]);
+    } finally {
+      setIsLoading(false);
     }
+  };
 
+  // Фильтрация результатов (теперь для данных из API)
+  const filteredResults = (Array.isArray(searchResults) ? searchResults : []).filter(hotel => {
     // Фильтр по цене
     if (searchFilters.priceRange) {
       const [min, max] = searchFilters.priceRange.split('-').map(p => p.replace('+', ''));
-      filtered = filtered.filter(item => {
-        if (max === '') return item.price >= parseInt(min);
-        return item.price >= parseInt(min) && item.price <= parseInt(max);
-      });
-    }
-
-    // Фильтр по типу размещения
-    if (searchFilters.accommodationType) {
-      filtered = filtered.filter(item => item.type === searchFilters.accommodationType);
+      if (max === '') {
+        if (hotel.price_per_night < parseInt(min)) return false;
+      } else {
+        if (hotel.price_per_night < parseInt(min) || hotel.price_per_night > parseInt(max)) return false;
+      }
     }
 
     // Фильтр по удобствам
     if (searchFilters.selectedAmenities.length > 0) {
-      filtered = filtered.filter(item =>
-        searchFilters.selectedAmenities.every(amenity =>
-          item.amenities.includes(amenity)
-        )
-      );
+      const hotelAmenities = (hotel.amenities || '').toLowerCase();
+      return searchFilters.selectedAmenities.some(amenity => {
+        switch (amenity) {
+          case 'wifi': return hotelAmenities.includes('wi-fi') || hotelAmenities.includes('wifi');
+          case 'breakfast': return hotelAmenities.includes('завтрак') || hotelAmenities.includes('breakfast');
+          case 'parking': return hotelAmenities.includes('парковка') || hotelAmenities.includes('parking');
+          case 'pool': return hotelAmenities.includes('бассейн') || hotelAmenities.includes('pool');
+          case 'spa': return hotelAmenities.includes('спа') || hotelAmenities.includes('spa');
+          default: return hotelAmenities.includes(amenity);
+        }
+      });
     }
 
-    // Сортировка
+    return true;
+  });
+
+  // Сортировка результатов
+  const sortedResults = [...filteredResults].sort((a, b) => {
     switch (searchFilters.sortBy) {
       case 'price-low':
-        filtered.sort((a, b) => a.price - b.price);
-        break;
+        return (a.price_per_night || 0) - (b.price_per_night || 0);
       case 'price-high':
-        filtered.sort((a, b) => b.price - a.price);
-        break;
+        return (b.price_per_night || 0) - (a.price_per_night || 0);
       case 'rating':
-        filtered.sort((a, b) => b.rating - a.rating);
-        break;
-      default:
-        // popularity - оставляем как есть
-        break;
+        return (b.rating || 0) - (a.rating || 0);
+      default: // popularity
+        return (b.rating || 0) - (a.rating || 0);
     }
-
-    setSearchResults(filtered);
-  }, [searchFilters]);
+  });
 
   const heroRef = useRef(null);
   const { scrollYProgress } = useScroll({
@@ -243,9 +262,7 @@ function SearchPageContent() {
   };
 
   const handleSearch = () => {
-    setIsLoading(true);
-    // Имитация загрузки
-    setTimeout(() => setIsLoading(false), 1000);
+    searchHotels(searchFilters.destination);
   };
 
   const handleFilterChange = (field: string, value: string | number) => {
@@ -272,84 +289,99 @@ function SearchPageContent() {
 
   return (
     <>
-      <Navbar />
-      
       {/* Компактный Hero Section */}
-      <ParallaxBackground intensity={0.5} className="relative">
-        <motion.section 
-          ref={heroRef}
-          className="relative bg-gradient-to-br from-emerald-900 via-teal-900 to-blue-800 text-white py-16 overflow-hidden"
-        >
-          <motion.div
-            style={{ y: heroY, opacity: heroOpacity }}
-            className="absolute inset-0 w-full h-[120%] -top-[10%]"
+      <div className="relative bg-gradient-to-br from-blue-600 via-purple-600 to-pink-600">
+        <div className="absolute inset-0 bg-black bg-opacity-20"></div>
+        
+        <div className="relative z-10 container mx-auto px-4 py-16">
+          <motion.div 
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, ease: "easeOut" }}
+            className="max-w-4xl mx-auto text-center"
           >
-            <div className="absolute inset-0 bg-[url('/images/pattern.svg')] opacity-20 bg-center"></div>
+            {/* Заголовок */}
+            <h1 className="text-4xl md:text-6xl font-bold text-white mb-4">
+              Поиск жилья
+            </h1>
+            <p className="text-xl text-white/90 mb-8">
+              Найдите идеальное место для отдыха по всему миру
+            </p>
+
+            {/* Форма поиска */}
+            <div className="bg-white/95 backdrop-blur-md rounded-2xl p-6 mb-8 shadow-2xl">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                {/* Место назначения */}
+                <div className="relative">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Куда поедем?
+                  </label>
+                  <div className="relative">
+                    <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                    <input
+                      type="text"
+                      value={searchFilters.destination}
+                      onChange={(e) => handleFilterChange('destination', e.target.value)}
+                      placeholder="Город или отель"
+                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                </div>
+
+                {/* Дата заезда */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Заезд
+                  </label>
+                  <div className="relative">
+                    <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                    <input
+                      type="date"
+                      value={searchFilters.checkIn}
+                      onChange={(e) => handleFilterChange('checkIn', e.target.value)}
+                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                </div>
+
+                {/* Дата выезда */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Выезд
+                  </label>
+                  <div className="relative">
+                    <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                    <input
+                      type="date"
+                      value={searchFilters.checkOut}
+                      onChange={(e) => handleFilterChange('checkOut', e.target.value)}
+                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                </div>
+
+                {/* Кнопка поиска */}
+                <div className="flex items-end">
+                  <button
+                    onClick={handleSearch}
+                    disabled={isLoading}
+                    className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+                  >
+                    {isLoading ? (
+                      <RefreshCw className="w-5 h-5 animate-spin" />
+                    ) : (
+                      <>
+                        <Search className="w-5 h-5" />
+                        <span>Найти</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
           </motion.div>
-
-          {/* Анимированные частицы */}
-          <div className="absolute inset-0">
-            {[...Array(15)].map((_, i) => (
-              <motion.div
-                key={i}
-                className="absolute w-1 h-1 bg-white rounded-full opacity-40"
-                style={{
-                  left: `${Math.random() * 100}%`,
-                  top: `${Math.random() * 100}%`,
-                }}
-                animate={{
-                  y: [-10, -30, -10],
-                  opacity: [0.2, 0.6, 0.2],
-                  scale: [1, 1.2, 1],
-                }}
-                transition={{
-                  duration: 2 + Math.random() * 2,
-                  repeat: Infinity,
-                  delay: Math.random() * 2,
-                  ease: "easeInOut"
-                }}
-              />
-            ))}
-          </div>
-
-          <div className="container mx-auto px-4 relative z-10">
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8 }}
-              className="text-center max-w-4xl mx-auto"
-            >
-              <motion.h1 
-                className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4 leading-tight"
-                whileInView={{ scale: [0.9, 1] }}
-              >
-                <motion.span 
-                  className="bg-gradient-to-r from-white via-emerald-100 to-teal-100 bg-clip-text text-transparent"
-                  whileInView={{
-                    backgroundImage: [
-                      'linear-gradient(to right, #ffffff, #d1fae5, #ccfbf1)',
-                      'linear-gradient(to right, #6ee7b7, #5eead4, #2dd4bf)',
-                      'linear-gradient(to right, #ffffff, #d1fae5, #ccfbf1)'
-                    ]
-                  }}
-                  transition={{ duration: 4, repeat: Infinity }}
-                >
-                  Поиск отелей и хостелов
-                </motion.span>
-              </motion.h1>
-              
-              <motion.p 
-                className="text-lg text-white/90 mb-6 leading-relaxed"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.2 }}
-              >
-                Найдено {searchResults.length} вариантов размещения
-              </motion.p>
-            </motion.div>
-          </div>
-        </motion.section>
-      </ParallaxBackground>
+        </div>
+      </div>
 
       {/* Расширенная форма поиска */}
       <motion.section
@@ -607,7 +639,7 @@ function SearchPageContent() {
                 Результаты поиска
               </h2>
               <p className="text-gray-600">
-                Найдено <span className="font-bold text-emerald-600">{searchResults.length}</span> вариантов размещения
+                Найдено <span className="font-bold text-emerald-600">{sortedResults.length}</span> вариантов размещения
               </p>
             </div>
 
@@ -649,11 +681,15 @@ function SearchPageContent() {
               className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
               variants={containerVariants}
             >
-              {searchResults.map((result, index) => (
+              {sortedResults.map((result, index) => (
                 <HotelCard
                   key={result.id}
-                  {...result}
-                  index={index}
+                  hotel={result}
+                  onClick={() => {
+                    console.log('Clicked hotel:', result);
+                    // Переход к странице отеля
+                    window.location.href = `/hotel/${result.id}`;
+                  }}
                 />
               ))}
             </motion.div>
@@ -663,19 +699,30 @@ function SearchPageContent() {
           {viewMode === 'map' && (
             <motion.div 
               variants={itemVariants}
-              className="w-full h-96 bg-gradient-to-br from-emerald-100 to-teal-100 rounded-2xl flex items-center justify-center shadow-lg border border-emerald-200"
-              whileHover={{ scale: 1.01 }}
+              className="w-full h-[600px] rounded-2xl overflow-hidden shadow-lg border border-emerald-200"
             >
-              <div className="text-center">
-                <Map className="w-16 h-16 text-emerald-600 mx-auto mb-4" />
-                <h3 className="text-2xl font-bold text-emerald-800 mb-2">Карта результатов</h3>
-                <p className="text-emerald-700">Интерактивная карта с {searchResults.length} найденными вариантами</p>
+              <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+                <HotelMap 
+                  hotels={sortedResults.map(result => ({
+                    id: result.id,
+                    name: result.name,
+                    city: result.city,
+                    address: result.address,
+                    price_per_night: result.price_per_night,
+                    rating: result.rating,
+                    image_url: result.image_url,
+                    category: result.category,
+                    description: result.description,
+                    amenities: result.amenities,
+                    created_at: result.created_at
+                  }))}
+                />
               </div>
             </motion.div>
           )}
 
           {/* Пустые результаты */}
-          {searchResults.length === 0 && (
+          {sortedResults.length === 0 && (
             <motion.div 
               variants={itemVariants}
               className="text-center py-16"
@@ -695,16 +742,16 @@ function SearchPageContent() {
           )}
         </div>
       </motion.section>
-      
-      <Footer />
     </>
   );
 }
 
 export default function SearchPage() {
   return (
-    <Suspense fallback={<div>Loading...</div>}>
-      <SearchPageContent />
-    </Suspense>
+    <div className="pt-24">
+      <Suspense fallback={<div>Загрузка...</div>}>
+        <SearchPageContent />
+      </Suspense>
+    </div>
   );
 } 

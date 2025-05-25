@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/lib/auth';
 import { useBooking, Booking } from '@/lib/booking';
+import { useCurrency } from '@/lib/currency';
 import { motion } from '@/lib/motion';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -24,6 +25,7 @@ import {
 export default function BookingsPage() {
   const { user } = useAuth();
   const { bookings, loadUserBookings, cancelBooking, isLoading } = useBooking();
+  const { formatPrice } = useCurrency();
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [cancellingBooking, setCancellingBooking] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>('all');
@@ -209,7 +211,7 @@ export default function BookingsPage() {
                         
                         <div className="text-right">
                           <div className="text-2xl font-bold text-gray-900">
-                            {booking.totalPrice.toLocaleString()}₽
+                            {formatPrice(booking.totalPrice)}
                           </div>
                           <div className="text-sm text-gray-600">
                             {calculateNights(booking.checkIn, booking.checkOut)} ночей
@@ -391,7 +393,7 @@ export default function BookingsPage() {
                       </div>
                       <div>
                         <label className="text-sm text-gray-600">Общая сумма</label>
-                        <p className="font-medium text-lg">{selectedBooking.totalPrice.toLocaleString()}₽</p>
+                        <p className="font-medium text-lg">{formatPrice(selectedBooking.totalPrice)}</p>
                       </div>
                       {selectedBooking.paymentMethod && (
                         <div className="md:col-span-2">

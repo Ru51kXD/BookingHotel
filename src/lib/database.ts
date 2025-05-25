@@ -83,45 +83,27 @@ class DatabaseManager {
         return;
       }
 
-      // Принудительно обновляем базу для добавления мировых направлений с большим количеством отелей
-      if (row.count === 0 || row.count < 300) {
-        console.log('Обновляем базу данных с расширенными мировыми направлениями...');
-        this.db!.run("DELETE FROM hotels", (err) => {
-          if (!err) {
-            this.insertExpandedSampleData();
-          }
-        });
+      // Загружаем российские отели если база пуста
+      if (row.count === 0) {
+        console.log('Загружаем российские отели в базу данных...');
+        this.insertRussianHotelsData();
       } else {
-        // Проверяем есть ли старые локальные URL изображений
-        this.db.get("SELECT COUNT(*) as count FROM hotels WHERE image_url LIKE '/images/%'", (err, row: any) => {
-          if (!err && row && row.count > 0) {
-            console.log('Найдены устаревшие URL изображений, обновляем базу данных...');
-            // Удаляем все данные и создаем заново
-            this.db!.run("DELETE FROM hotels", (err) => {
-              if (!err) {
-                this.insertExpandedSampleData();
-              }
-            });
-          }
-        });
+        console.log(`В базе уже есть ${row.count} отелей`);
       }
     });
   }
 
-  private insertExpandedSampleData() {
+  private insertRussianHotelsData() {
     if (!this.db) return;
 
-    // Импортируем расширенную базу отелей
-    import('./expandedHotels').then(({ allExpandedHotelsData, generateAdditionalHotels }) => {
-      const additionalHotels = generateAdditionalHotels();
-      const allHotels = [...allExpandedHotelsData, ...additionalHotels];
-
+    // Импортируем российские отели
+    import('./russianHotels').then(({ allRussianHotelsData }) => {
       const insertStmt = this.db!.prepare(`
         INSERT INTO hotels (name, category, city, address, price_per_night, rating, image_url, description, amenities)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       `);
 
-      allHotels.forEach((hotel) => {
+      allRussianHotelsData.forEach((hotel) => {
         insertStmt.run([
           hotel.name,
           hotel.category,
@@ -139,25 +121,20 @@ class DatabaseManager {
         if (err) {
           console.error('Ошибка вставки данных:', err.message);
         } else {
-          console.log(`🎉 МЕГА база отелей расширена! Добавлено ${allHotels.length} заведений:`);
-          console.log('🌍 По городам (включая +6 отелей на каждое направление):');
-          console.log('  🇫🇷 Париж: ~31 отелей (+6 новых)');
-          console.log('  🇯🇵 Токио: ~31 отелей (+6 новых)');
-          console.log('  🇺🇸 Нью-Йорк: ~31 отелей (+6 новых)');
-          console.log('  🇬🇧 Лондон: ~26 отелей (+6 новых)');
-          console.log('  🇦🇪 Дубай: ~26 отелей (+6 новых)');
-          console.log('  🇮🇹 Рим: ~24 отеля (+6 новых)');
-          console.log('  🇮🇩 Бали: ~24 отеля (+6 новых)');
-          console.log('  🇦🇺 Сидней: ~24 отеля (+6 новых)');
-          console.log('  🇪🇸 Барселона: ~24 отеля (+6 новых)');
-          console.log('  🇹🇷 Стамбул: ~24 отеля (+6 новых)');
-          console.log('  🇸🇬 Сингапур: ~24 отеля (+6 новых)');
-          console.log('  🇲🇻 Мальдивы: ~21 отель (+6 новых)');
+          console.log(`🎉 РОССИЙСКАЯ база отелей создана! Добавлено ${allRussianHotelsData.length} отелей:`);
+          console.log('🏙️ По городам:');
+          console.log('  🏛️ Москва: отели разных категорий');
+          console.log('  🏰 Санкт-Петербург: исторические отели');
+          console.log('  🏖️ Сочи: курортные отели');
+          console.log('  🕌 Казань: татарские отели');
+          console.log('  🏢 Екатеринбург + другие города');
           console.log('⭐ Категории: Люкс, Бизнес, Бюджет, Курорт, Бутик');
-          console.log('💰 Цены: от 3,000₽ до 70,000₽ за ночь');
-          console.log('🏨 Всего отелей в базе: ~450+');
+          console.log('💰 Цены: от 3,000₽ до 45,000₽ за ночь');
+          console.log(`🏨 Всего отелей в базе: ${allRussianHotelsData.length}`);
         }
       });
+    }).catch(error => {
+      console.error('Ошибка загрузки российских отелей:', error);
     });
   }
 
@@ -173,8 +150,8 @@ class DatabaseManager {
       const params: any[] = [];
 
       if (query) {
-        sql += ' AND (name LIKE ? OR description LIKE ?)';
-        params.push(`%${query}%`, `%${query}%`);
+        sql += ' AND (name LIKE ? OR description LIKE ? OR city LIKE ?)';
+        params.push(`%${query}%`, `%${query}%`, `%${query}%`);
       }
 
       if (category) {

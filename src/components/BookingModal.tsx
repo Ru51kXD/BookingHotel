@@ -28,7 +28,7 @@ interface BookingModalProps {
 }
 
 export default function BookingModal({ hotel, isOpen, onClose }: BookingModalProps) {
-  const { user } = useAuth();
+  const { user, addSavedCard } = useAuth();
   const { formatPrice, currency, getCurrencyInfo } = useCurrency();
   const { createBooking, processPayment } = useBooking();
   
@@ -53,7 +53,9 @@ export default function BookingModal({ hotel, isOpen, onClose }: BookingModalPro
     cardHolder: '',
     expiryDate: '',
     cvv: '',
-    paymentMethod: 'card' as const
+    paymentMethod: 'card' as const,
+    selectedSavedCard: '',
+    saveCard: false
   });
 
   // Reset state when modal opens/closes
@@ -73,7 +75,9 @@ export default function BookingModal({ hotel, isOpen, onClose }: BookingModalPro
       cardHolder: '',
       expiryDate: '',
       cvv: '',
-      paymentMethod: 'card'
+      paymentMethod: 'card',
+      selectedSavedCard: '',
+      saveCard: false
     });
     onClose();
   };
@@ -131,6 +135,16 @@ export default function BookingModal({ hotel, isOpen, onClose }: BookingModalPro
     setIsLoading(true);
 
     try {
+      // Если нужно сохранить карту
+      if (paymentData.saveCard && user && paymentData.cardNumber && paymentData.cardHolder) {
+        await addSavedCard({
+          cardNumber: paymentData.cardNumber.replace(/\s/g, ''),
+          cardHolder: paymentData.cardHolder,
+          expiryDate: paymentData.expiryDate,
+          cvv: paymentData.cvv
+        });
+      }
+
       const result = await processPayment(bookingId, {
         method: {
           type: paymentData.paymentMethod,
@@ -140,7 +154,7 @@ export default function BookingModal({ hotel, isOpen, onClose }: BookingModalPro
           cvv: paymentData.cvv
         },
         amount: calculateTotalPrice(),
-        currency: 'RUB',
+        currency: 'KZT',
         bookingId
       });
 
@@ -312,7 +326,7 @@ export default function BookingModal({ hotel, isOpen, onClose }: BookingModalPro
             <hr className="border-blue-200" />
             <div className="flex justify-between font-bold text-lg">
               <span>Общая стоимость:</span>
-              <span>{formatPrice(calculateTotalPrice(), 'rub')}</span>
+              <span>{formatPrice(calculateTotalPrice())}</span>
             </div>
           </div>
         </div>
@@ -348,70 +362,196 @@ export default function BookingModal({ hotel, isOpen, onClose }: BookingModalPro
           <hr className="my-3" />
           <div className="flex justify-between text-lg font-bold">
             <span>К оплате:</span>
-            <span>{formatPrice(calculateTotalPrice(), 'rub')}</span>
+            <span>{formatPrice(calculateTotalPrice())}</span>
           </div>
         </div>
       </div>
 
-      {/* Payment Form */}
-      <div className="space-y-6">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Номер карты
+      {/* Payment Method Selection */}
+      {user?.savedCards && user.savedCards.length > 0 && (
+        <div className="mb-6">
+          <label className="block text-sm font-medium text-gray-700 mb-3">
+            Способ оплаты
           </label>
-          <input
-            type="text"
-            value={paymentData.cardNumber}
-            onChange={(e) => setPaymentData({
-              ...paymentData,
-              cardNumber: formatCardNumber(e.target.value)
-            })}
-            placeholder="1234 5678 9012 3456"
-            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-            maxLength={19}
-            required
-          />
+          <div className="space-y-3">
+            {/* Saved Cards */}
+            {user.savedCards.map((card) => (
+              <div
+                key={card.id}
+                className={`border-2 rounded-xl p-4 cursor-pointer transition-all ${
+                  paymentData.selectedSavedCard === card.id
+                    ? 'border-blue-500 bg-blue-50'
+                    : 'border-gray-200 hover:border-gray-300'
+                }`}
+                onClick={() => setPaymentData({
+                  ...paymentData,
+                  selectedSavedCard: card.id,
+                  cardNumber: card.cardNumber,
+                  cardHolder: card.cardHolder,
+                  expiryDate: card.expiryDate
+                })}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <input
+                      type="radio"
+                      checked={paymentData.selectedSavedCard === card.id}
+                      onChange={() => {}}
+                      className="w-4 h-4 text-blue-600"
+                    />
+                    <div>
+                      <p className="font-medium text-gray-900">{card.cardNumber}</p>
+                      <p className="text-sm text-gray-600">{card.cardHolder}</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm text-gray-600">{card.expiryDate}</p>
+                    {card.isDefault && (
+                      <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">
+                        По умолчанию
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+            
+            {/* New Card Option */}
+            <div
+              className={`border-2 rounded-xl p-4 cursor-pointer transition-all ${
+                paymentData.selectedSavedCard === ''
+                  ? 'border-blue-500 bg-blue-50'
+                  : 'border-gray-200 hover:border-gray-300'
+              }`}
+              onClick={() => setPaymentData({
+                ...paymentData,
+                selectedSavedCard: '',
+                cardNumber: '',
+                cardHolder: '',
+                expiryDate: '',
+                cvv: ''
+              })}
+            >
+              <div className="flex items-center space-x-3">
+                <input
+                  type="radio"
+                  checked={paymentData.selectedSavedCard === ''}
+                  onChange={() => {}}
+                  className="w-4 h-4 text-blue-600"
+                />
+                <div>
+                  <p className="font-medium text-gray-900">Новая карта</p>
+                  <p className="text-sm text-gray-600">Введите данные новой карты</p>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
+      )}
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Имя держателя карты
-          </label>
-          <input
-            type="text"
-            value={paymentData.cardHolder}
-            onChange={(e) => setPaymentData({
-              ...paymentData,
-              cardHolder: e.target.value.toUpperCase()
-            })}
-            placeholder="IVAN PETROV"
-            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-            required
-          />
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
+      {/* Payment Form - показывается только если выбрана новая карта или нет сохраненных карт */}
+      {(paymentData.selectedSavedCard === '' || !user?.savedCards?.length) && (
+        <div className="space-y-6">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Срок действия
+              Номер карты
             </label>
             <input
               type="text"
-              value={paymentData.expiryDate}
+              value={paymentData.cardNumber}
               onChange={(e) => setPaymentData({
                 ...paymentData,
-                expiryDate: formatExpiryDate(e.target.value)
+                cardNumber: formatCardNumber(e.target.value)
               })}
-              placeholder="MM/YY"
+              placeholder="1234 5678 9012 3456"
               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-              maxLength={5}
+              maxLength={19}
               required
             />
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              CVV
+              Имя держателя карты
+            </label>
+            <input
+              type="text"
+              value={paymentData.cardHolder}
+              onChange={(e) => setPaymentData({
+                ...paymentData,
+                cardHolder: e.target.value.toUpperCase()
+              })}
+              placeholder="IVAN PETROV"
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+              required
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Срок действия
+              </label>
+              <input
+                type="text"
+                value={paymentData.expiryDate}
+                onChange={(e) => setPaymentData({
+                  ...paymentData,
+                  expiryDate: formatExpiryDate(e.target.value)
+                })}
+                placeholder="MM/YY"
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                maxLength={5}
+                required
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                CVV
+              </label>
+              <input
+                type="password"
+                value={paymentData.cvv}
+                onChange={(e) => setPaymentData({
+                  ...paymentData,
+                  cvv: e.target.value.replace(/\D/g, '')
+                })}
+                placeholder="123"
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                maxLength={4}
+                required
+              />
+            </div>
+          </div>
+
+          {/* Save Card Option */}
+          {user && paymentData.selectedSavedCard === '' && (
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="saveCard"
+                checked={paymentData.saveCard}
+                onChange={(e) => setPaymentData({
+                  ...paymentData,
+                  saveCard: e.target.checked
+                })}
+                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              />
+              <label htmlFor="saveCard" className="text-sm text-gray-700">
+                Сохранить карту для будущих покупок
+              </label>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* CVV для сохраненных карт */}
+      {paymentData.selectedSavedCard !== '' && user?.savedCards?.length && (
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              CVV код
             </label>
             <input
               type="password"
@@ -425,17 +565,20 @@ export default function BookingModal({ hotel, isOpen, onClose }: BookingModalPro
               maxLength={4}
               required
             />
+            <p className="text-xs text-gray-500 mt-1">
+              Введите CVV код для подтверждения платежа
+            </p>
           </div>
         </div>
+      )}
 
-        {/* Security Notice */}
-        <div className="bg-green-50 rounded-xl p-4 border border-green-200">
-          <div className="flex items-start space-x-2">
-            <Shield className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
-            <div className="text-sm text-green-800">
-              <p className="font-medium mb-1">Безопасная оплата</p>
-              <p>Ваши данные защищены 256-битным SSL шифрованием</p>
-            </div>
+      {/* Security Notice */}
+      <div className="bg-green-50 rounded-xl p-4 border border-green-200">
+        <div className="flex items-start space-x-2">
+          <Shield className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+          <div className="text-sm text-green-800">
+            <p className="font-medium mb-1">Безопасная оплата</p>
+            <p>Ваши данные защищены 256-битным SSL шифрованием</p>
           </div>
         </div>
       </div>
@@ -475,7 +618,7 @@ export default function BookingModal({ hotel, isOpen, onClose }: BookingModalPro
           </div>
           <div className="flex justify-between">
             <span className="text-gray-600">Сумма:</span>
-            <span className="font-medium">{calculateTotalPrice().toLocaleString()}₽</span>
+            <span className="font-medium">{formatPrice(calculateTotalPrice())}</span>
           </div>
         </div>
       </div>

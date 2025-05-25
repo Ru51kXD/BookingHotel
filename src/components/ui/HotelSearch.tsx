@@ -1,10 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Search, MapPin, Calendar, Users, Star } from 'lucide-react';
-import { motion } from '@/lib/motion';
+import React, { useState, useEffect, useRef } from 'react';
+import { Search, MapPin, Calendar, Users, Star, ChevronDown } from 'lucide-react';
+import { motion, AnimatePresence } from '@/lib/motion';
 import Image from 'next/image';
-import { createPlaceholderImage, createImageErrorHandler } from '@/lib/imageUtils';
+import { createPlaceholderImage, createImageErrorHandler, getCategoryPlaceholder } from '@/lib/imageUtils';
+import { useCurrency } from '@/lib/currency';
+import { searchDestinations, countryFlags } from '@/lib/suggestions';
 
 interface Hotel {
   id: number;
@@ -38,10 +40,49 @@ export default function HotelSearch({ className = '' }: HotelSearchProps) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(false);
   const [showResults, setShowResults] = useState(false);
+  
+  // Автокомплит для городов
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [suggestions, setSuggestions] = useState(searchDestinations(''));
+  const [activeSuggestion, setActiveSuggestion] = useState(-1);
+  const cityInputRef = useRef<HTMLInputElement>(null);
+  const suggestionsRef = useRef<HTMLDivElement>(null);
+  
+  const { formatPrice } = useCurrency();
 
   // Загружаем категории при инициализации
   useEffect(() => {
     fetchCategories();
+  }, []);
+
+  // Обновляем подсказки при вводе в поле города
+  useEffect(() => {
+    if (selectedCity.length >= 1) {
+      const newSuggestions = searchDestinations(selectedCity, 6);
+      setSuggestions(newSuggestions);
+      setShowSuggestions(true);
+    } else {
+      setSuggestions(searchDestinations('', 6));
+      setShowSuggestions(selectedCity.length === 0);
+    }
+    setActiveSuggestion(-1);
+  }, [selectedCity]);
+
+  // Закрытие подсказок при клике вне компонента
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        cityInputRef.current && 
+        !cityInputRef.current.contains(event.target as Node) &&
+        suggestionsRef.current &&
+        !suggestionsRef.current.contains(event.target as Node)
+      ) {
+        setShowSuggestions(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   const fetchCategories = async () => {
@@ -84,12 +125,42 @@ export default function HotelSearch({ className = '' }: HotelSearchProps) {
     }
   };
 
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('ru-RU', {
-      style: 'currency',
-      currency: 'RUB',
-      maximumFractionDigits: 0
-    }).format(price);
+  const handleCityInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSelectedCity(e.target.value);
+  };
+
+  const handleSuggestionClick = (destination: any) => {
+    setSelectedCity(destination.label);
+    setShowSuggestions(false);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (!showSuggestions) return;
+
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        setActiveSuggestion(prev => 
+          prev < suggestions.length - 1 ? prev + 1 : prev
+        );
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        setActiveSuggestion(prev => prev > 0 ? prev - 1 : -1);
+        break;
+      case 'Enter':
+        e.preventDefault();
+        if (activeSuggestion >= 0 && suggestions[activeSuggestion]) {
+          handleSuggestionClick(suggestions[activeSuggestion]);
+        } else {
+          handleSearch();
+        }
+        break;
+      case 'Escape':
+        setShowSuggestions(false);
+        setActiveSuggestion(-1);
+        break;
+    }
   };
 
   const renderStars = (rating: number) => {
@@ -163,23 +234,74 @@ export default function HotelSearch({ className = '' }: HotelSearchProps) {
               ))}
             </select>
             <div className="absolute right-4 top-1/2 transform -translate-y-1/2 pointer-events-none">
-              <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
+              <ChevronDown className="w-5 h-5 text-gray-400" />
             </div>
           </div>
 
-          {/* Город */}
+          {/* Город с автокомплитом */}
           <div className="relative">
-            <MapPin className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <MapPin className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5 z-10" />
             <input
+              ref={cityInputRef}
               type="text"
-              placeholder="Страна или город..."
+              placeholder="Куда едем? Начните вводить город..."
               value={selectedCity}
-              onChange={(e) => setSelectedCity(e.target.value)}
+              onChange={handleCityInputChange}
+              onKeyDown={handleKeyDown}
+              onFocus={() => setShowSuggestions(true)}
               className="w-full pl-12 pr-4 py-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-gray-50/50 hover:bg-white"
-              onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
             />
+            
+            {/* Подсказки */}
+            <AnimatePresence>
+              {showSuggestions && suggestions.length > 0 && (
+                <motion.div
+                  ref={suggestionsRef}
+                  initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                  transition={{ duration: 0.2 }}
+                  className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-xl shadow-xl z-50 max-h-80 overflow-y-auto"
+                >
+                  <div className="p-2">
+                    {suggestions.map((destination, index) => (
+                      <motion.button
+                        key={`${destination.city}-${destination.country}`}
+                        onClick={() => handleSuggestionClick(destination)}
+                        className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left transition-all duration-200 ${
+                          index === activeSuggestion 
+                            ? 'bg-blue-50 border-blue-200 border' 
+                            : 'hover:bg-gray-50'
+                        }`}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                      >
+                        <span className="text-2xl">
+                          {countryFlags[destination.country] || '🌍'}
+                        </span>
+                        <div className="flex-1">
+                          <div className="font-semibold text-gray-900">
+                            {destination.city}
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            {destination.country}
+                          </div>
+                        </div>
+                        <MapPin className="w-4 h-4 text-gray-400" />
+                      </motion.button>
+                    ))}
+                  </div>
+                  
+                  {selectedCity && suggestions.length === 0 && (
+                    <div className="p-4 text-center text-gray-500">
+                      <MapPin className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+                      <p>Город не найден</p>
+                      <p className="text-sm">Попробуйте ввести другое название</p>
+                    </div>
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </div>
 
@@ -280,11 +402,10 @@ export default function HotelSearch({ className = '' }: HotelSearchProps) {
               >
                 <div className="w-20 h-20 relative rounded-lg overflow-hidden mr-4 flex-shrink-0">
                   <Image
-                    src={hotel.image_url}
+                    src={getCategoryPlaceholder(hotel.category, 80, 80, hotel.name)}
                     alt={hotel.name}
                     fill
                     className="object-cover"
-                    onError={createImageErrorHandler(hotel.category, 80, 80)}
                   />
                 </div>
                 

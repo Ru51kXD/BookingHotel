@@ -4,6 +4,7 @@ import { useState, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import { motion, AnimatePresence, useScroll, useTransform, useSpring } from '@/lib/motion';
+import { useCurrency } from '@/lib/currency';
 import { 
   Star, 
   MapPin, 
@@ -88,6 +89,7 @@ const hotelData = {
 };
 
 export default function HotelDetailPage() {
+  const { formatPrice } = useCurrency();
   const heroRef = useRef(null);
   const contentRef = useRef(null);
   
@@ -542,7 +544,7 @@ export default function HotelDetailPage() {
                                   whileInView={{ scale: [0.8, 1.1, 1] }}
                                   transition={{ duration: 0.5 }}
                                 >
-                                  ₽{(room.priceDiscount || room.price).toLocaleString()}
+                                  {formatPrice(room.priceDiscount || room.price)}
                                   <span className="text-sm font-normal text-gray-500">/ночь</span>
                                 </motion.div>
                               </div>
@@ -704,7 +706,7 @@ export default function HotelDetailPage() {
                       whileInView={{ scale: [0.9, 1.05, 1] }}
                       transition={{ duration: 0.5 }}
                     >
-                      ₽{totalPrice.toLocaleString()} за 3 ночи
+                      {formatPrice(totalPrice)} за 3 ночи
                     </motion.div>
                   </motion.div>
                 )}

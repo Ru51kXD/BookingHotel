@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion } from '@/lib/motion';
+import { useCurrency } from '@/lib/currency';
 import { 
   User, 
   MapPin, 
@@ -135,6 +136,7 @@ const favoriteHotels = [
 ];
 
 export default function ProfilePage() {
+  const { formatPrice } = useCurrency();
   const [activeTab, setActiveTab] = useState('overview');
   const [isEditing, setIsEditing] = useState(false);
   const [editedUser, setEditedUser] = useState(userData);
@@ -398,7 +400,7 @@ export default function ProfilePage() {
                           {getStatusIcon(booking.status)}
                           <span className="ml-1">{getStatusText(booking.status)}</span>
                         </div>
-                        <div className="text-lg font-bold text-gray-800 mt-1">₽{booking.price.toLocaleString()}</div>
+                        <div className="text-lg font-bold text-gray-800 mt-1">{formatPrice(booking.price)}</div>
                       </div>
                     </div>
                   ))}
@@ -478,7 +480,7 @@ export default function ProfilePage() {
                             <p className="font-semibold">{booking.roomType}</p>
                           </div>
                           <div className="text-right">
-                            <p className="text-2xl font-bold text-emerald-600">₽{booking.price.toLocaleString()}</p>
+                            <p className="text-2xl font-bold text-emerald-600">{formatPrice(booking.price)}</p>
                             <p className="text-gray-600 text-sm">за {booking.nights} {booking.nights === 1 ? 'ночь' : 'ночи'}</p>
                           </div>
                         </div>
@@ -591,7 +593,7 @@ export default function ProfilePage() {
                       
                       <div className="flex items-center justify-between">
                         <div>
-                          <span className="text-2xl font-bold text-emerald-600">₽{hotel.price.toLocaleString()}</span>
+                          <span className="text-2xl font-bold text-emerald-600">{formatPrice(hotel.price)}</span>
                           <span className="text-gray-600 text-sm ml-1">/ночь</span>
                         </div>
                         <Link href={`/hotel/${hotel.id}`}>

@@ -1,11 +1,13 @@
 'use client';
 
+import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion } from '@/lib/motion';
 import { useCurrency } from '@/lib/currency';
-import { Star, MapPin, Coffee, Wifi, Car, ChevronRight, Heart } from 'lucide-react';
+import { Star, MapPin, Coffee, Wifi, Car, ChevronRight, Heart, UtensilsCrossed, Waves, Dumbbell } from 'lucide-react';
 import { useState } from 'react';
+import { createImageErrorHandler, getCategoryPlaceholder } from '@/lib/imageUtils';
 
 interface HotelCardProps {
   id: number;
@@ -16,7 +18,8 @@ interface HotelCardProps {
   location: string;
   description: string;
   amenities: string[];
-  index?: number; // Для анимации с задержкой
+  category?: string;
+  index?: number;
 }
 
 export default function HotelCard({
@@ -28,50 +31,68 @@ export default function HotelCard({
   location,
   description,
   amenities,
+  category = 'hotel',
   index = 0
 }: HotelCardProps) {
   const { formatPrice } = useCurrency();
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageFailed, setImageFailed] = useState(false);
 
-  // Иконки для основных удобств
-  const amenityIcons: Record<string, React.ReactElement> = {
-    'wifi': <Wifi size={14} />,
-    'breakfast': <Coffee size={14} />,
-    'parking': <Car size={14} />,
-    'pool': <span className="text-sm">🏊</span>,
-    'spa': <span className="text-sm">🧖</span>,
-    'gym': <span className="text-sm">💪</span>,
-    'kitchen': <span className="text-sm">🍳</span>,
-    'lockers': <span className="text-sm">🔒</span>,
-    'laundry': <span className="text-sm">👕</span>,
-    'restaurant': <span className="text-sm">🍽️</span>,
-    'bar': <span className="text-sm">🍸</span>,
-    'tours': <span className="text-sm">🗺️</span>,
-    'beach': <span className="text-sm">🏖️</span>
+  const amenityIcons: { [key: string]: string } = {
+    wifi: '📶',
+    parking: '🚗',
+    restaurant: '🍽️',
+    pool: '🏊',
+    gym: '💪',
+    spa: '🧘',
+    breakfast: '☕',
+    'air-conditioning': '❄️',
+    'room-service': '🛎️',
+    bar: '🍺',
+    'pet-friendly': '🐕',
+    laundry: '👕',
+    kitchen: '🍳',
+    lockers: '🔒',
+    'common-room': '🛋️',
+    tours: '🗺️',
+    events: '🎉',
+    games: '🎮',
+    library: '📚'
   };
 
-  // Упрощенные анимации для лучшей производительности
-  const cardVariants = {
-    hidden: { opacity: 0, y: 30 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: {
-        duration: 0.5,
-        delay: index * 0.1,
-        ease: [0.25, 0.46, 0.45, 0.94],
-      },
-    },
+  const renderStars = (rating: number) => {
+    return Array.from({ length: 5 }, (_, i) => (
+      <Star
+        key={i}
+        className={`w-4 h-4 ${
+          i < Math.floor(rating) 
+            ? 'text-yellow-400 fill-current' 
+            : 'text-gray-300'
+        }`}
+      />
+    ));
   };
 
-  // Обрезаем описание, если оно слишком длинное
-  const truncatedDescription = description.length > 100
-    ? `${description.substring(0, 100)}...`
+  const truncatedDescription = description.length > 120 
+    ? `${description.slice(0, 120)}...` 
     : description;
 
-  // Заглушка для изображений
-  const defaultImage = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNiIgZmlsbD0iIzlmYTZiNyIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkhvdGVsPC90ZXh0Pjwvc3ZnPg==';
+  const cardVariants = {
+    hidden: { opacity: 0, y: 50, scale: 0.9 },
+    visible: { 
+      opacity: 1, 
+      y: 0, 
+      scale: 1,
+      transition: {
+        duration: 0.6,
+        delay: index * 0.1,
+        ease: [0.25, 0.46, 0.45, 0.94]
+      }
+    }
+  };
+
+  // Улучшенная заглушка для изображений
+  const defaultPlaceholder = getCategoryPlaceholder(category, 400, 300, name);
 
   return (
     <motion.div
@@ -87,66 +108,39 @@ export default function HotelCard({
       transition={{ duration: 0.3 }}
     >
       {/* Изображение отеля */}
-      <div className="relative h-48 overflow-hidden">
-        <div className="w-full h-full bg-gray-100">
-          <Image
-            src={imageFailed ? defaultImage : image}
-            alt={name}
-            fill
-            className={`object-cover transition-all duration-500 group-hover:scale-105 ${
-              imageLoaded ? 'opacity-100' : 'opacity-0'
-            }`}
-            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-            onLoad={() => setImageLoaded(true)}
-            onError={() => {
-              setImageFailed(true);
-              setImageLoaded(true);
-            }}
-            priority={index < 3}
-          />
-          
-          {/* Скелетон загрузки */}
-          {!imageLoaded && (
-            <div className="absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 animate-pulse">
-              <div className="w-full h-full flex items-center justify-center">
-                <div className="text-gray-400 text-lg">📷</div>
-              </div>
-            </div>
-          )}
-        </div>
+      <div className="relative h-48 overflow-hidden bg-gray-100">
+        <Image
+          src={image || defaultPlaceholder}
+          alt={name}
+          fill
+          className="object-cover group-hover:scale-110 transition-transform duration-500"
+          onError={createImageErrorHandler(category, 400, 300, name)}
+        />
         
-        {/* Бейдж с рейтингом */}
-        <motion.div 
-          className="absolute top-3 right-3 bg-white/95 backdrop-blur-sm text-gray-800 px-2 py-1 rounded-lg text-sm font-semibold flex items-center shadow-sm"
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.3, delay: index * 0.05 + 0.2 }}
-          whileHover={{ scale: 1.05 }}
-        >
-          <Star className="h-3 w-3 mr-1 text-yellow-500" fill="currentColor" />
-          {rating}
-        </motion.div>
+        {/* Рейтинг */}
+        <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm rounded-lg px-3 py-1 flex items-center space-x-1 shadow-lg">
+          <div className="flex items-center space-x-1">
+            {renderStars(rating)}
+          </div>
+          <span className="text-sm font-semibold text-gray-800 ml-1">
+            {rating.toFixed(1)}
+          </span>
+        </div>
 
-        {/* Кнопка избранного */}
-        <motion.button
-          className="absolute top-3 left-3 bg-white/95 backdrop-blur-sm text-gray-600 p-2 rounded-lg shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
-          whileHover={{ scale: 1.1, color: '#ef4444' }}
-          whileTap={{ scale: 0.9 }}
-        >
-          <Heart className="h-4 w-4" />
-        </motion.button>
+        {/* Категория отеля */}
+        <div className="absolute top-3 left-3 bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-3 py-1 rounded-full text-xs font-medium shadow-lg">
+          {category === 'budget' ? 'Хостел' : 'Отель'}
+        </div>
 
         {/* Цена */}
-        <motion.div 
-          className="absolute bottom-3 left-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white px-3 py-1 rounded-lg font-semibold shadow-sm"
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.3, delay: index * 0.05 + 0.3 }}
-          whileHover={{ scale: 1.05 }}
-        >
-          {formatPrice(price)}
-          <span className="text-xs font-normal text-emerald-100 ml-1">/ночь</span>
-        </motion.div>
+        <div className="absolute bottom-3 right-3 bg-white/95 backdrop-blur-sm rounded-xl px-4 py-2 shadow-lg border border-white/50">
+          <div className="text-right">
+            <div className="text-lg font-bold text-emerald-600">
+              {formatPrice(price)}
+            </div>
+            <div className="text-xs text-gray-600">за ночь</div>
+          </div>
+        </div>
       </div>
 
       {/* Контент карточки */}

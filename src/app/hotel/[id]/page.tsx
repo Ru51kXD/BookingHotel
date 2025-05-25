@@ -10,7 +10,7 @@ import { useCurrency } from '@/lib/currency';
 import { createPlaceholderImage, createImageErrorHandler } from '@/lib/imageUtils';
 
 interface Hotel {
-  id: number;
+  id: number | string;
   name: string;
   category: string;
   city: string;
@@ -38,6 +38,35 @@ export default function HotelDetailPage() {
   const fetchHotel = async (id: string) => {
     try {
       setLoading(true);
+      
+      // Сначала проверяем localStorage для отелей, созданных через админку
+      const storedHotels = localStorage.getItem('admin_hotels');
+      if (storedHotels) {
+        const hotelsFromStorage = JSON.parse(storedHotels);
+        const foundHotel = hotelsFromStorage.find((hotel: any) => hotel.id.toString() === id);
+        
+        if (foundHotel) {
+          // Адаптируем данные отеля из localStorage к ожидаемому формату
+          const adaptedHotel = {
+            id: foundHotel.id,
+            name: foundHotel.name,
+            category: foundHotel.category,
+            city: foundHotel.city,
+            address: foundHotel.address,
+            price_per_night: foundHotel.price_per_night,
+            rating: foundHotel.rating,
+            image_url: foundHotel.image_url,
+            description: foundHotel.description || `Добро пожаловать в ${foundHotel.name}! Этот замечательный ${foundHotel.category} расположен в ${foundHotel.city} и предлагает комфортабельное размещение с отличным сервисом.`,
+            amenities: foundHotel.amenities ? foundHotel.amenities.join(', ') : 'Wi-Fi, Парковка'
+          };
+          
+          setHotel(adaptedHotel);
+          setLoading(false);
+          return;
+        }
+      }
+      
+      // Если не найден в localStorage, пытаемся загрузить из API
       const response = await fetch(`/api/hotels/${id}`);
       const data = await response.json();
       
@@ -70,13 +99,14 @@ export default function HotelDetailPage() {
   const getAmenityIcon = (amenity: string) => {
     const normalizedAmenity = amenity.toLowerCase().trim();
     
-    if (normalizedAmenity.includes('wi-fi')) return <Wifi className="w-5 h-5" />;
-    if (normalizedAmenity.includes('парковка')) return <Car className="w-5 h-5" />;
-    if (normalizedAmenity.includes('ресторан')) return <Utensils className="w-5 h-5" />;
-    if (normalizedAmenity.includes('завтрак')) return <Coffee className="w-5 h-5" />;
-    if (normalizedAmenity.includes('фитнес')) return <Dumbbell className="w-5 h-5" />;
-    if (normalizedAmenity.includes('spa')) return <Shield className="w-5 h-5" />;
-    if (normalizedAmenity.includes('поддержка') || normalizedAmenity.includes('рецепция')) return <Phone className="w-5 h-5" />;
+    if (normalizedAmenity.includes('wifi') || normalizedAmenity.includes('wi-fi')) return <Wifi className="w-5 h-5" />;
+    if (normalizedAmenity.includes('parking') || normalizedAmenity.includes('парковка')) return <Car className="w-5 h-5" />;
+    if (normalizedAmenity.includes('restaurant') || normalizedAmenity.includes('ресторан')) return <Utensils className="w-5 h-5" />;
+    if (normalizedAmenity.includes('breakfast') || normalizedAmenity.includes('завтрак')) return <Coffee className="w-5 h-5" />;
+    if (normalizedAmenity.includes('gym') || normalizedAmenity.includes('фитнес')) return <Dumbbell className="w-5 h-5" />;
+    if (normalizedAmenity.includes('spa') || normalizedAmenity.includes('спа')) return <Shield className="w-5 h-5" />;
+    if (normalizedAmenity.includes('tv') || normalizedAmenity.includes('телевизор')) return <Phone className="w-5 h-5" />;
+    if (normalizedAmenity.includes('pool') || normalizedAmenity.includes('бассейн')) return <Shield className="w-5 h-5" />;
     
     return <Shield className="w-5 h-5" />;
   };
