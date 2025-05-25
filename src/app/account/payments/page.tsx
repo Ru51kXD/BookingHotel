@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/auth';
+import { usePayments, AddCardData, PaymentCard } from '@/lib/payments';
 import { motion } from '@/lib/motion';
 import Link from 'next/link';
 import { 
@@ -17,49 +18,28 @@ import {
   EyeOff
 } from 'lucide-react';
 
-interface PaymentCard {
-  id: string;
-  type: 'visa' | 'mastercard' | 'mir' | 'amex';
-  lastFour: string;
-  holderName: string;
-  expiryDate: string;
-  isDefault: boolean;
-  created_at: string;
-}
-
 export default function PaymentsPage() {
   const { user } = useAuth();
-  const [cards, setCards] = useState<PaymentCard[]>([
-    {
-      id: '1',
-      type: 'visa',
-      lastFour: '4532',
-      holderName: 'IVAN PETROV',
-      expiryDate: '12/26',
-      isDefault: true,
-      created_at: '2024-01-15T10:00:00Z'
-    },
-    {
-      id: '2',
-      type: 'mastercard',
-      lastFour: '7890',
-      holderName: 'IVAN PETROV',
-      expiryDate: '08/27',
-      isDefault: false,
-      created_at: '2024-02-20T14:30:00Z'
-    }
-  ]);
+  const { cards, isLoading: cardsLoading, loadUserCards, addCard, removeCard, setDefaultCard } = usePayments();
   
   const [showAddCard, setShowAddCard] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showCardNumber, setShowCardNumber] = useState(false);
-  const [newCard, setNewCard] = useState({
+  const [message, setMessage] = useState('');
+  const [cardError, setCardError] = useState('');
+  const [newCard, setNewCard] = useState<AddCardData>({
     cardNumber: '',
-    holderName: '',
+    cardHolder: '',
     expiryDate: '',
     cvv: '',
     isDefault: false
   });
+
+  useEffect(() => {
+    if (user?.id) {
+      loadUserCards(user.id);
+    }
+  }, [user?.id, loadUserCards]);
 
   if (!user) {
     return (
@@ -112,55 +92,55 @@ export default function PaymentsPage() {
   const handleAddCard = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setCardError('');
 
-    // Симуляция добавления карты
-    await new Promise(resolve => setTimeout(resolve, 2000));
-
-    const cardId = Math.random().toString(36).substr(2, 9);
-    const lastFour = newCard.cardNumber.slice(-4);
-    
-    // Определяем тип карты по номеру
-    let cardType: 'visa' | 'mastercard' | 'mir' | 'amex' = 'visa';
-    if (newCard.cardNumber.startsWith('5')) cardType = 'mastercard';
-    else if (newCard.cardNumber.startsWith('2')) cardType = 'mir';
-    else if (newCard.cardNumber.startsWith('3')) cardType = 'amex';
-
-    const newCardData: PaymentCard = {
-      id: cardId,
-      type: cardType,
-      lastFour,
-      holderName: newCard.holderName.toUpperCase(),
-      expiryDate: newCard.expiryDate,
-      isDefault: newCard.isDefault || cards.length === 0,
-      created_at: new Date().toISOString()
-    };
-
-    // Если новая карта по умолчанию, убираем флаг с других
-    if (newCard.isDefault) {
-      setCards(prev => prev.map(card => ({ ...card, isDefault: false })));
+    try {
+      const result = await addCard(user.id, newCard);
+      if (result.success) {
+        setShowAddCard(false);
+        setNewCard({
+          cardNumber: '',
+          cardHolder: '',
+          expiryDate: '',
+          cvv: '',
+          isDefault: false
+        });
+        setMessage('Карта успешно добавлена!');
+        setTimeout(() => setMessage(''), 3000);
+      } else {
+        setCardError(result.error || 'Ошибка при добавлении карты');
+      }
+    } catch (error) {
+      setCardError('Произошла ошибка');
+    } finally {
+      setIsLoading(false);
     }
-
-    setCards(prev => [...prev, newCardData]);
-    setShowAddCard(false);
-    setNewCard({
-      cardNumber: '',
-      holderName: '',
-      expiryDate: '',
-      cvv: '',
-      isDefault: false
-    });
-    setIsLoading(false);
   };
 
-  const handleDeleteCard = (cardId: string) => {
-    setCards(prev => prev.filter(card => card.id !== cardId));
+  const handleDeleteCard = async (cardId: string) => {
+    if (!confirm('Вы уверены, что хотите удалить эту карту?')) return;
+
+    try {
+      const result = await removeCard(user.id, cardId);
+      if (result.success) {
+        setMessage('Карта успешно удалена!');
+        setTimeout(() => setMessage(''), 3000);
+      }
+    } catch (error) {
+      setMessage('Ошибка при удалении карты');
+    }
   };
 
-  const handleSetDefault = (cardId: string) => {
-    setCards(prev => prev.map(card => ({
-      ...card,
-      isDefault: card.id === cardId
-    })));
+  const handleSetDefault = async (cardId: string) => {
+    try {
+      const result = await setDefaultCard(user.id, cardId);
+      if (result.success) {
+        setMessage('Основная карта изменена!');
+        setTimeout(() => setMessage(''), 3000);
+      }
+    } catch (error) {
+      setMessage('Ошибка при изменении основной карты');
+    }
   };
 
   const formatCardNumber = (value: string) => {
@@ -212,7 +192,10 @@ export default function PaymentsPage() {
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              onClick={() => setShowAddCard(true)}
+              onClick={() => {
+                setShowAddCard(true);
+                setCardError('');
+              }}
               className="mt-4 md:mt-0 flex items-center bg-gradient-to-r from-blue-500 to-purple-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-blue-600 hover:to-purple-700 transition-all"
             >
               <Plus className="w-5 h-5 mr-2" />
@@ -220,6 +203,20 @@ export default function PaymentsPage() {
             </motion.button>
           </div>
         </motion.div>
+
+        {/* Success/Error Messages */}
+        {message && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-6 bg-green-50 border border-green-200 rounded-2xl p-4"
+          >
+            <div className="flex items-center space-x-3">
+              <CheckCircle className="w-5 h-5 text-green-600" />
+              <span className="text-green-800 font-medium">{message}</span>
+            </div>
+          </motion.div>
+        )}
 
         {/* Security Notice */}
         <motion.div
@@ -242,7 +239,16 @@ export default function PaymentsPage() {
 
         {/* Cards List */}
         <div className="space-y-6">
-          {cards.length === 0 ? (
+          {cardsLoading ? (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-center py-16 bg-white rounded-2xl shadow-lg"
+            >
+              <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+              <p className="text-gray-600">Загружаем ваши карты...</p>
+            </motion.div>
+          ) : cards.length === 0 ? (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -256,7 +262,10 @@ export default function PaymentsPage() {
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => setShowAddCard(true)}
+                onClick={() => {
+                  setShowAddCard(true);
+                  setCardError('');
+                }}
                 className="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-blue-600 hover:to-purple-700 transition-all"
               >
                 Добавить первую карту
@@ -277,7 +286,7 @@ export default function PaymentsPage() {
                     <div>
                       <div className="flex items-center space-x-2">
                         <span className="font-medium text-gray-900">
-                          •••• •••• •••• {card.lastFour}
+                          {card.cardNumber}
                         </span>
                         {card.isDefault && (
                           <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium flex items-center">
@@ -287,7 +296,7 @@ export default function PaymentsPage() {
                         )}
                       </div>
                       <div className="text-sm text-gray-600 mt-1">
-                        {card.holderName} • {card.expiryDate}
+                        {card.cardHolder} • {card.expiryDate}
                       </div>
                       <div className="text-xs text-gray-500 mt-1">
                         Добавлена {new Date(card.created_at).toLocaleDateString('ru-RU')}
@@ -375,6 +384,20 @@ export default function PaymentsPage() {
                   </button>
                 </div>
 
+                {/* Error Message */}
+                {cardError && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mb-6 bg-red-50 border border-red-200 rounded-xl p-4"
+                  >
+                    <div className="flex items-center space-x-3">
+                      <X className="w-5 h-5 text-red-600" />
+                      <span className="text-red-800 font-medium">{cardError}</span>
+                    </div>
+                  </motion.div>
+                )}
+
                 <form onSubmit={handleAddCard} className="space-y-6">
                   {/* Card Number */}
                   <div>
@@ -411,10 +434,10 @@ export default function PaymentsPage() {
                     </label>
                     <input
                       type="text"
-                      value={newCard.holderName}
+                      value={newCard.cardHolder}
                       onChange={(e) => setNewCard({
                         ...newCard,
-                        holderName: e.target.value.toUpperCase()
+                        cardHolder: e.target.value.toUpperCase()
                       })}
                       placeholder="IVAN PETROV"
                       className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"

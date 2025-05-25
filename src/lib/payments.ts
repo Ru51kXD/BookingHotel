@@ -22,31 +22,6 @@ export interface AddCardData {
 // Временное хранилище карт пользователей
 const userCards: Map<string, PaymentCard[]> = new Map();
 
-// Демо-карты для демо-пользователя
-const demoCards: PaymentCard[] = [
-  {
-    id: 'card_demo1',
-    type: 'visa',
-    cardNumber: '**** **** **** 1234',
-    cardHolder: 'DEMO USER',
-    expiryDate: '12/25',
-    isDefault: true,
-    created_at: '2024-01-01T00:00:00.000Z',
-    updated_at: new Date().toISOString()
-  },
-  {
-    id: 'card_demo2',
-    type: 'mastercard',
-    cardNumber: '**** **** **** 5678',
-    cardHolder: 'DEMO USER',
-    expiryDate: '06/26',
-    isDefault: false,
-    created_at: '2024-01-15T00:00:00.000Z',
-    updated_at: new Date().toISOString()
-  }
-];
-userCards.set('demo123', demoCards);
-
 export class PaymentService {
   // Получить карты пользователя
   static getUserCards(userId: string): PaymentCard[] {
@@ -59,11 +34,40 @@ export class PaymentService {
         } catch {
           localStorage.removeItem(`cards_${userId}`);
         }
+      } else {
+        // Если для демо-пользователя нет данных в localStorage, инициализируем их
+        if (userId === 'demo123') {
+          const demoCards: PaymentCard[] = [
+            {
+              id: 'card_demo1',
+              type: 'visa',
+              cardNumber: '**** **** **** 1234',
+              cardHolder: 'DEMO USER',
+              expiryDate: '12/25',
+              isDefault: true,
+              created_at: '2024-01-01T00:00:00.000Z',
+              updated_at: new Date().toISOString()
+            },
+            {
+              id: 'card_demo2',
+              type: 'mastercard',
+              cardNumber: '**** **** **** 5678',
+              cardHolder: 'DEMO USER',
+              expiryDate: '06/26',
+              isDefault: false,
+              created_at: '2024-01-15T00:00:00.000Z',
+              updated_at: new Date().toISOString()
+            }
+          ];
+          // Сохраняем демо-карты в localStorage
+          localStorage.setItem(`cards_${userId}`, JSON.stringify(demoCards));
+          return demoCards;
+        }
       }
     }
 
-    // Возвращаем из памяти
-    return userCards.get(userId) || [];
+    // Возвращаем пустой массив для новых пользователей
+    return [];
   }
 
   // Добавить новую карту
@@ -243,6 +247,15 @@ export class PaymentService {
       amex: '💳'
     };
     return icons[type] || '💳';
+  }
+
+  // Очистить данные пользователя (для отладки)
+  static clearUserData(userId: string): void {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem(`cards_${userId}`);
+      localStorage.removeItem(`bookings_${userId}`);
+      console.log(`Данные пользователя ${userId} очищены`);
+    }
   }
 }
 

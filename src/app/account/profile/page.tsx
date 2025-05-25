@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/auth';
 import { usePayments, AddCardData, PaymentCard } from '@/lib/payments';
+import { PaymentService } from '@/lib/payments';
 import { motion, AnimatePresence } from '@/lib/motion';
 import Link from 'next/link';
 import { 
@@ -541,6 +542,29 @@ export default function ProfilePage() {
                   </div>
                 </div>
               </div>
+
+              {/* Кнопка очистки данных (только для отладки) */}
+              {user.id === 'demo123' && (
+                <div className="mt-6 pt-6 border-t border-gray-200">
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
+                    <h4 className="font-medium text-yellow-800 mb-2">Режим отладки</h4>
+                    <p className="text-sm text-yellow-700 mb-3">
+                      Очистить все данные пользователя и перезагрузить страницу
+                    </p>
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => {
+                        PaymentService.clearUserData(user.id);
+                        window.location.reload();
+                      }}
+                      className="bg-yellow-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-yellow-700 transition-all"
+                    >
+                      Очистить данные
+                    </motion.button>
+                  </div>
+                </div>
+              )}
             </motion.div>
 
             {/* Profile Completion */}
