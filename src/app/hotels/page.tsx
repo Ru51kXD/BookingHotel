@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -8,6 +8,10 @@ import { Star, MapPin, Filter, Grid, List, ArrowLeft } from 'lucide-react';
 import { motion } from '@/lib/motion';
 import dynamic from 'next/dynamic';
 import { getCategoryPlaceholder, createImageErrorHandler } from '@/lib/imageUtils';
+import { useCurrency } from '@/lib/currency';
+import { Hotel } from '@/lib/database';
+import { Search } from 'lucide-react';
+import HotelCard from '@/components/HotelCard';
 
 const Footer = dynamic(() => import('@/components/ui/Footer'), { ssr: true });
 
@@ -33,10 +37,12 @@ interface Category {
 
 export default function HotelsPage() {
   const searchParams = useSearchParams();
+  const { formatPrice, convertPrice } = useCurrency();
   const [hotels, setHotels] = useState<Hotel[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [showFilters, setShowFilters] = useState(false);
   
   // Состояние фильтров
   const [filters, setFilters] = useState({
@@ -87,13 +93,13 @@ export default function HotelsPage() {
         // Фильтрация по цене и рейтингу на клиенте
         if (filters.minPrice) {
           filteredHotels = filteredHotels.filter((hotel: Hotel) => 
-            hotel.price_per_night >= parseInt(filters.minPrice)
+            convertPrice(hotel.price_per_night) >= parseInt(filters.minPrice)
           );
         }
         
         if (filters.maxPrice) {
           filteredHotels = filteredHotels.filter((hotel: Hotel) => 
-            hotel.price_per_night <= parseInt(filters.maxPrice)
+            convertPrice(hotel.price_per_night) <= parseInt(filters.maxPrice)
           );
         }
         
@@ -110,14 +116,6 @@ export default function HotelsPage() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('ru-RU', {
-      style: 'currency',
-      currency: 'RUB',
-      maximumFractionDigits: 0
-    }).format(price);
   };
 
   const renderStars = (rating: number) => {
@@ -283,7 +281,7 @@ export default function HotelsPage() {
                   {/* Цена */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Цена за ночь (₽)
+                      Цена за ночь (в текущей валюте)
                     </label>
                     <div className="grid grid-cols-2 gap-2">
                       <input
@@ -301,6 +299,9 @@ export default function HotelsPage() {
                         className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       />
                     </div>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Цены автоматически конвертируются в выбранную валюту
+                    </p>
                   </div>
 
                   {/* Рейтинг */}

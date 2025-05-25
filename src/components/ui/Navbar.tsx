@@ -107,8 +107,8 @@ export default function Navbar() {
         variants={navVariants}
         className={`fixed top-0 z-50 w-full transition-all duration-500 ${
           isScrolled 
-            ? 'bg-white/95 backdrop-blur-xl shadow-lg border-b border-gray-200/50' 
-            : 'bg-gradient-to-r from-white/10 via-white/5 to-transparent backdrop-blur-sm'
+            ? 'bg-white/98 backdrop-blur-xl shadow-xl border-b border-gray-200/80' 
+            : 'bg-white/15 backdrop-blur-md shadow-md border-b border-white/20'
         }`}
       >
         <div className="container mx-auto px-4 py-4">

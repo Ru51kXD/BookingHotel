@@ -4,8 +4,9 @@ import { useState } from 'react';
 import { motion } from '@/lib/motion';
 import Image from 'next/image';
 import { Hotel } from '@/lib/database';
-import { Star, MapPin } from 'lucide-react';
+import { Star, MapPin, Calendar, Users } from 'lucide-react';
 import BookingModal from '@/components/BookingModal';
+import { useCurrency } from '@/lib/currency';
 
 interface HotelCardProps {
   hotel: Hotel;
@@ -13,6 +14,7 @@ interface HotelCardProps {
 }
 
 export default function HotelCard({ hotel, onClick }: HotelCardProps) {
+  const { formatPrice } = useCurrency();
   const [showBookingModal, setShowBookingModal] = useState(false);
 
   const handleBookingClick = (e: React.MouseEvent) => {
@@ -60,7 +62,7 @@ export default function HotelCard({ hotel, onClick }: HotelCardProps) {
 
           <div className="flex items-center justify-between mb-4">
             <div className="text-2xl font-bold text-gray-900">
-              {hotel.price_per_night.toLocaleString()}₽
+              {formatPrice(hotel.price_per_night)}
               <span className="text-base font-normal text-gray-600"> / ночь</span>
             </div>
           </div>

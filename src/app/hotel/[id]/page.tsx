@@ -6,6 +6,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowLeft, MapPin, Star, Wifi, Car, Utensils, Coffee, Dumbbell, Shield, Phone } from 'lucide-react';
 import { motion } from '@/lib/motion';
+import { useCurrency } from '@/lib/currency';
 import { createPlaceholderImage, createImageErrorHandler } from '@/lib/imageUtils';
 
 interface Hotel {
@@ -23,6 +24,7 @@ interface Hotel {
 
 export default function HotelDetailPage() {
   const params = useParams();
+  const { formatPrice } = useCurrency();
   const [hotel, setHotel] = useState<Hotel | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -50,14 +52,6 @@ export default function HotelDetailPage() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('ru-RU', {
-      style: 'currency',
-      currency: 'RUB',
-      maximumFractionDigits: 0
-    }).format(price);
   };
 
   const renderStars = (rating: number) => {

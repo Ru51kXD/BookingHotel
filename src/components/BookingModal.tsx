@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from '@/lib/motion';
 import { useAuth } from '@/lib/auth';
+import { useCurrency } from '@/lib/currency';
 import { useBooking, BookingService } from '@/lib/booking';
 import { Hotel } from '@/lib/database';
 import { 
@@ -28,6 +29,7 @@ interface BookingModalProps {
 
 export default function BookingModal({ hotel, isOpen, onClose }: BookingModalProps) {
   const { user } = useAuth();
+  const { formatPrice, currency, getCurrencyInfo } = useCurrency();
   const { createBooking, processPayment } = useBooking();
   
   const [step, setStep] = useState(1); // 1: Booking details, 2: Payment, 3: Confirmation
@@ -199,7 +201,7 @@ export default function BookingModal({ hotel, isOpen, onClose }: BookingModalPro
             </div>
             <div className="mt-2">
               <span className="text-2xl font-bold text-gray-900">
-                {hotel.price_per_night.toLocaleString()}₽
+                {formatPrice(hotel.price_per_night)}
               </span>
               <span className="text-gray-600 text-sm"> / ночь</span>
             </div>
@@ -297,7 +299,7 @@ export default function BookingModal({ hotel, isOpen, onClose }: BookingModalPro
           <div className="space-y-2">
             <div className="flex justify-between text-sm">
               <span>Цена за ночь:</span>
-              <span>{hotel.price_per_night.toLocaleString()}₽</span>
+              <span>{formatPrice(hotel.price_per_night)}</span>
             </div>
             <div className="flex justify-between text-sm">
               <span>Количество ночей:</span>
@@ -310,7 +312,7 @@ export default function BookingModal({ hotel, isOpen, onClose }: BookingModalPro
             <hr className="border-blue-200" />
             <div className="flex justify-between font-bold text-lg">
               <span>Общая стоимость:</span>
-              <span>{calculateTotalPrice().toLocaleString()}₽</span>
+              <span>{formatPrice(calculateTotalPrice(), 'rub')}</span>
             </div>
           </div>
         </div>
@@ -346,7 +348,7 @@ export default function BookingModal({ hotel, isOpen, onClose }: BookingModalPro
           <hr className="my-3" />
           <div className="flex justify-between text-lg font-bold">
             <span>К оплате:</span>
-            <span>{calculateTotalPrice().toLocaleString()}₽</span>
+            <span>{formatPrice(calculateTotalPrice(), 'rub')}</span>
           </div>
         </div>
       </div>

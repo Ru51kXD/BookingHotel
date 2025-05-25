@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/auth';
+import { useCurrency } from '@/lib/currency';
 import { motion } from '@/lib/motion';
 import Link from 'next/link';
 import { 
@@ -21,6 +22,7 @@ import {
 
 export default function SettingsPage() {
   const { user } = useAuth();
+  const { currency, setCurrency } = useCurrency();
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
@@ -43,11 +45,35 @@ export default function SettingsPage() {
     shareData: false
   });
 
+  const [preferences, setPreferences] = useState({
+    language: 'ru',
+    currency: 'kzt',
+    timezone: 'Asia/Almaty'
+  });
+
   const [passwordData, setPasswordData] = useState({
     currentPassword: '',
     newPassword: '',
     confirmPassword: ''
   });
+
+  // Загрузка сохраненных настроек при монтировании
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedSettings = localStorage.getItem('userPreferences');
+      if (savedSettings) {
+        try {
+          const parsed = JSON.parse(savedSettings);
+          if (parsed.notifications) setNotifications(parsed.notifications);
+          if (parsed.security) setSecurity(parsed.security);
+          if (parsed.privacy) setPrivacy(parsed.privacy);
+          if (parsed.preferences) setPreferences(parsed.preferences);
+        } catch (error) {
+          console.log('Ошибка при загрузке настроек:', error);
+        }
+      }
+    }
+  }, []);
 
   if (!user) {
     return (
@@ -66,12 +92,32 @@ export default function SettingsPage() {
     setIsLoading(true);
     setMessage('');
 
-    // Симуляция сохранения настроек
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    try {
+      // Синхронизируем валюту с контекстом
+      if (preferences.currency !== currency) {
+        setCurrency(preferences.currency as any);
+      }
 
-    setMessage('Настройки успешно сохранены!');
-    setTimeout(() => setMessage(''), 3000);
-    setIsLoading(false);
+      // Сохраняем настройки в localStorage
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('userPreferences', JSON.stringify({
+          notifications,
+          security,
+          privacy,
+          preferences
+        }));
+      }
+
+      // Симуляция сохранения настроек на сервере
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      setMessage('Настройки успешно сохранены! Валюта и предпочтения применены, цены обновлены.');
+      setTimeout(() => setMessage(''), 3000);
+    } catch (error) {
+      setMessage('Ошибка при сохранении настроек');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handlePasswordChange = async () => {
@@ -412,8 +458,13 @@ export default function SettingsPage() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Язык интерфейса
                   </label>
-                  <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm">
+                  <select 
+                    value={preferences.language}
+                    onChange={(e) => setPreferences({ ...preferences, language: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
+                  >
                     <option value="ru">Русский</option>
+                    <option value="kk">Қазақша</option>
                     <option value="en">English</option>
                   </select>
                 </div>
@@ -422,19 +473,37 @@ export default function SettingsPage() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Валюта
                   </label>
-                  <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm">
+                  <select 
+                    value={preferences.currency}
+                    onChange={(e) => {
+                      const newCurrency = e.target.value;
+                      setPreferences({ ...preferences, currency: newCurrency });
+                      // Мгновенно обновляем валюту в контексте для предварительного просмотра
+                      setCurrency(newCurrency as any);
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
+                  >
+                    <option value="kzt">Казахстанский тенге (₸)</option>
                     <option value="rub">Российский рубль (₽)</option>
                     <option value="usd">Доллар США ($)</option>
                     <option value="eur">Евро (€)</option>
                   </select>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Цены на отелях автоматически пересчитаются в выбранную валюту
+                  </p>
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Часовой пояс
                   </label>
-                  <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm">
+                  <select 
+                    value={preferences.timezone}
+                    onChange={(e) => setPreferences({ ...preferences, timezone: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
+                  >
                     <option value="Europe/Moscow">Москва (UTC+3)</option>
+                    <option value="Asia/Almaty">Астана (UTC+6)</option>
                     <option value="Asia/Yekaterinburg">Екатеринбург (UTC+5)</option>
                     <option value="Asia/Novosibirsk">Новосибирск (UTC+7)</option>
                   </select>

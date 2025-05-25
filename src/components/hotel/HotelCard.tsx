@@ -3,6 +3,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion } from '@/lib/motion';
+import { useCurrency } from '@/lib/currency';
 import { Star, MapPin, Coffee, Wifi, Car, ChevronRight, Heart } from 'lucide-react';
 import { useState } from 'react';
 
@@ -29,6 +30,7 @@ export default function HotelCard({
   amenities,
   index = 0
 }: HotelCardProps) {
+  const { formatPrice } = useCurrency();
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageFailed, setImageFailed] = useState(false);
 
@@ -142,7 +144,7 @@ export default function HotelCard({
           transition={{ duration: 0.3, delay: index * 0.05 + 0.3 }}
           whileHover={{ scale: 1.05 }}
         >
-          ₽{price.toLocaleString()}
+          {formatPrice(price)}
           <span className="text-xs font-normal text-emerald-100 ml-1">/ночь</span>
         </motion.div>
       </div>
