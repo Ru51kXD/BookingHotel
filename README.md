@@ -1,12 +1,12 @@
 # 🏨 Hotel Booking System - Система бронирования отелей
-https://booking-hotel-omega-three.vercel.app/
+
 ![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)
 ![Next.js](https://img.shields.io/badge/Next.js-14-black.svg)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-blue.svg)
 ![License](https://img.shields.io/badge/license-Proprietary-red.svg)
 
 **Современная веб-платформа для бронирования отелей с админ-панелью, системой оплаты и мультивалютной поддержкой.**
-
+https://booking-hotel-omega-three.vercel.app/
 ---
 
 ## 📖 Описание проекта
