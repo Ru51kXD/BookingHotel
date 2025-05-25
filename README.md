@@ -356,6 +356,9 @@ DATABASE_URL=postgresql://...
 JWT_SECRET=your-secret-key
 ```
 
+### 📋 Инструкция по деплою
+Подробная инструкция по развертыванию на Vercel: [DEPLOYMENT.md](./DEPLOYMENT.md)
+
 ---
 
 ## 📈 Roadmap
