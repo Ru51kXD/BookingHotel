@@ -96,7 +96,7 @@ export default function Navbar() {
     { name: 'Отели', path: '/hotels' },
     { name: 'Направления', path: '/destinations' },
     { name: 'О нас', path: '/about' },
-    { name: 'Контакты', path: '/contact' },
+    { name: 'Контакты', path: '/contacts' },
   ];
 
   return (

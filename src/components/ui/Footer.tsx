@@ -127,15 +127,15 @@ export default function Footer() {
         >
           <div className="flex items-center text-indigo-200">
             <Mail size={18} className="mr-2" />
-            <span>info@stayeasy.com</span>
+            <span>info@stayeasy.kz</span>
           </div>
           <div className="flex items-center text-indigo-200">
             <Phone size={18} className="mr-2" />
-            <span>+7 (800) 123-45-67</span>
+            <span>+7 (717) 123-45-67</span>
           </div>
           <div className="flex items-center text-indigo-200">
             <MapPin size={18} className="mr-2" />
-            <span>г. Москва, ул. Примерная, д. 123</span>
+            <span>г. Астана, пр. Мангилик Ел, 55</span>
           </div>
         </motion.div>
 

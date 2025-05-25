@@ -24,22 +24,22 @@ const contactInfo = [
   {
     icon: <Phone className="w-6 h-6" />,
     title: 'Телефон',
-    info: '+7 (495) 123-45-67',
+    info: '+7 (717) 123-45-67',
     subInfo: 'Звонки принимаются 24/7',
     color: 'from-blue-500 to-cyan-500'
   },
   {
     icon: <Mail className="w-6 h-6" />,
     title: 'Email',
-    info: 'info@stayeasy.ru',
+    info: 'info@stayeasy.kz',
     subInfo: 'Ответим в течение 2 часов',
     color: 'from-green-500 to-emerald-500'
   },
   {
     icon: <MapPin className="w-6 h-6" />,
     title: 'Адрес',
-    info: 'г. Москва, ул. Тверская, 1',
-    subInfo: 'БЦ "Премиум", 15 этаж',
+    info: 'г. Астана, пр. Мангилик Ел, 55',
+    subInfo: 'БЦ "Изумруд", 15 этаж',
     color: 'from-purple-500 to-pink-500'
   },
   {
@@ -54,24 +54,24 @@ const contactInfo = [
 // Офисы в разных городах
 const offices = [
   {
-    city: 'Москва',
-    address: 'ул. Тверская, 1, БЦ "Премиум"',
-    phone: '+7 (495) 123-45-67',
-    email: 'moscow@stayeasy.ru',
+    city: 'Астана',
+    address: 'пр. Мангилик Ел, 55, БЦ "Изумруд"',
+    phone: '+7 (717) 123-45-67',
+    email: 'astana@stayeasy.kz',
     color: 'from-blue-500 to-blue-700'
   },
   {
-    city: 'Санкт-Петербург',
-    address: 'Невский пр., 28, оф. 301',
-    phone: '+7 (812) 987-65-43',
-    email: 'spb@stayeasy.ru',
+    city: 'Алматы',
+    address: 'пр. Достык, 20, оф. 501',
+    phone: '+7 (727) 987-65-43',
+    email: 'almaty@stayeasy.kz',
     color: 'from-indigo-500 to-indigo-700'
   },
   {
-    city: 'Екатеринбург',
-    address: 'ул. Ленина, 15, БЦ "Высоцкий"',
-    phone: '+7 (343) 555-77-88',
-    email: 'ekb@stayeasy.ru',
+    city: 'Шымкент',
+    address: 'пр. Республики, 15, БЦ "Казахстан"',
+    phone: '+7 (725) 555-77-88',
+    email: 'shymkent@stayeasy.kz',
     color: 'from-green-500 to-green-700'
   }
 ];
@@ -248,23 +248,23 @@ export default function ContactsPage() {
                 transition={{ duration: 0.8, delay: 0.4 }}
               >
                 <motion.a
-                  href="tel:+74951234567"
+                  href="tel:+77171234567"
                   className="p-6 bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 hover:bg-white/20 transition-all group"
                   whileHover={{ scale: 1.05, y: -5 }}
                 >
                   <Phone className="w-8 h-8 text-green-400 mx-auto mb-3 group-hover:scale-110 transition-transform" />
                   <div className="text-white font-bold">Позвонить</div>
-                  <div className="text-white/80 text-sm">+7 (495) 123-45-67</div>
+                  <div className="text-white/80 text-sm">+7 (717) 123-45-67</div>
                 </motion.a>
 
                 <motion.a
-                  href="mailto:info@stayeasy.ru"
+                  href="mailto:info@stayeasy.kz"
                   className="p-6 bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 hover:bg-white/20 transition-all group"
                   whileHover={{ scale: 1.05, y: -5 }}
                 >
                   <Mail className="w-8 h-8 text-blue-400 mx-auto mb-3 group-hover:scale-110 transition-transform" />
                   <div className="text-white font-bold">Написать</div>
-                  <div className="text-white/80 text-sm">info@stayeasy.ru</div>
+                  <div className="text-white/80 text-sm">info@stayeasy.kz</div>
                 </motion.a>
 
                 <motion.div
@@ -463,7 +463,7 @@ export default function ContactsPage() {
                 <div className="text-center z-10">
                   <MapPin className="w-12 h-12 text-purple-600 mx-auto mb-3" />
                   <p className="text-purple-800 font-medium">Интерактивная карта</p>
-                  <p className="text-purple-600 text-sm">Москва, ул. Тверская, 1</p>
+                  <p className="text-purple-600 text-sm">Астана, пр. Мангилик Ел, 55</p>
                 </div>
               </motion.div>
 
