@@ -94,9 +94,10 @@ export default function Navbar() {
   const menuItems = [
     { name: 'Главная', path: '/' },
     { name: 'Отели', path: '/hotels' },
-    { name: 'Направления', path: '/destinations' },
-    { name: 'О нас', path: '/about' },
-    { name: 'Контакты', path: '/contacts' },
+    { name: 'Хостелы', path: '/hostels' },
+    { name: 'Компания', path: '/company' },
+    { name: 'Помощь', path: '/help' },
+    { name: 'Сервисы', path: '/services' },
   ];
 
   return (

@@ -3,7 +3,7 @@
 import { useRef } from 'react';
 import dynamic from 'next/dynamic';
 import { motion, useScroll, useTransform, useSpring } from '@/lib/motion';
-import { Search, SlidersHorizontal, ChevronDown, Wifi, Coffee, Car, Tv, AirVent, Utensils, Filter, Grid3X3, LayoutGrid } from 'lucide-react';
+import { Search, SlidersHorizontal, ChevronDown, Wifi, Coffee, Car, Tv, AirVent, Utensils, Filter, Grid3X3, LayoutGrid, Bed, MapPin, Star } from 'lucide-react';
 
 // Динамический импорт компонентов
 const Navbar = dynamic(() => import('@/components/ui/Navbar'), { ssr: true });
@@ -16,6 +16,33 @@ const AnimatedChart = dynamic(() => import('@/components/ui/AnimatedChart'), { s
 const hostels = [
   {
     id: 1,
+    name: 'Astana Backpackers',
+    location: 'Центр города, Астана',
+    rating: 4.5,
+    price: 3500,
+    image: '/images/hostel1.jpg',
+    amenities: ['wifi', 'breakfast', 'parking']
+  },
+  {
+    id: 2,
+    name: 'Nomad Hostel',
+    location: 'Есиль район, Астана',
+    rating: 4.3,
+    price: 2800,
+    image: '/images/hostel2.jpg',
+    amenities: ['wifi', 'breakfast']
+  },
+  {
+    id: 3,
+    name: 'City Center Hostel',
+    location: 'Алматы район, Алматы',
+    rating: 4.7,
+    price: 4200,
+    image: '/images/hostel3.jpg',
+    amenities: ['wifi', 'parking']
+  },
+  {
+    id: 4,
     name: 'Хостел Метро',
     image: '/images/hostel-1.jpg',
     rating: 4.6,
@@ -25,7 +52,7 @@ const hostels = [
     amenities: ['WiFi', 'Kitchen', 'Laundry', 'Lockers', 'Common Room'],
   },
   {
-    id: 2,
+    id: 5,
     name: 'BackPacker Hub',
     image: '/images/hostel-2.jpg',
     rating: 4.8,
@@ -35,7 +62,7 @@ const hostels = [
     amenities: ['WiFi', 'Kitchen', 'Bar', 'Tours', 'Breakfast'],
   },
   {
-    id: 3,
+    id: 6,
     name: 'Дом Путешественника',
     image: '/images/hostel-3.jpg',
     rating: 4.5,
@@ -45,7 +72,7 @@ const hostels = [
     amenities: ['WiFi', 'Kitchen', 'Lockers', 'Luggage Storage'],
   },
   {
-    id: 4,
+    id: 7,
     name: 'Urban Nest',
     image: '/images/hostel-4.jpg',
     rating: 4.7,
@@ -55,7 +82,7 @@ const hostels = [
     amenities: ['WiFi', 'Kitchen', 'Gym', 'Rooftop', 'Coworking'],
   },
   {
-    id: 5,
+    id: 8,
     name: 'Молодежный Дом',
     image: '/images/hostel-5.jpg',
     rating: 4.4,
@@ -65,7 +92,7 @@ const hostels = [
     amenities: ['WiFi', 'Kitchen', 'Games', 'Events', 'Library'],
   },
   {
-    id: 6,
+    id: 9,
     name: 'Sleep & Meet',
     image: '/images/hostel-6.jpg',
     rating: 4.3,
@@ -162,6 +189,15 @@ export default function HostelsPage() {
         ease: [0.25, 0.46, 0.45, 0.94],
       },
     },
+  };
+
+  const getAmenityIcon = (amenity: string) => {
+    switch (amenity) {
+      case 'wifi': return <Wifi className="w-4 h-4" />;
+      case 'breakfast': return <Coffee className="w-4 h-4" />;
+      case 'parking': return <Car className="w-4 h-4" />;
+      default: return null;
+    }
   };
 
   return (
@@ -609,12 +645,55 @@ export default function HostelsPage() {
                 variants={containerVariants}
               >
                 {hostels.map((hostel, index) => (
-                  <HotelCard
+                  <motion.div
                     key={hostel.id}
-                    {...hostel}
-                    category="budget"
-                    index={index}
-                  />
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.1 }}
+                    className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow"
+                  >
+                    <div className="h-48 bg-gradient-to-r from-indigo-400 to-purple-500 flex items-center justify-center">
+                      <Bed className="w-16 h-16 text-white" />
+                    </div>
+                    
+                    <div className="p-6">
+                      <h3 className="text-xl font-semibold text-gray-800 mb-2">{hostel.name}</h3>
+                      
+                      <div className="flex items-center text-gray-600 mb-2">
+                        <MapPin className="w-4 h-4 mr-1" />
+                        <span className="text-sm">{hostel.location}</span>
+                      </div>
+                      
+                      <div className="flex items-center mb-4">
+                        <Star className="w-4 h-4 text-yellow-400 mr-1" />
+                        <span className="text-sm text-gray-600">{hostel.rating}</span>
+                      </div>
+                      
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex space-x-2">
+                          {hostel.amenities.map((amenity, idx) => (
+                            <div key={idx} className="text-gray-500">
+                              {getAmenityIcon(amenity)}
+                            </div>
+                          ))}
+                        </div>
+                        <div className="text-right">
+                          <div className="text-2xl font-bold text-indigo-600">
+                            {hostel.price.toLocaleString()} ₸
+                          </div>
+                          <div className="text-sm text-gray-500">за ночь</div>
+                        </div>
+                      </div>
+                      
+                      <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        className="w-full bg-indigo-600 text-white py-2 rounded-lg font-semibold hover:bg-indigo-700 transition-colors"
+                      >
+                        Забронировать
+                      </motion.button>
+                    </div>
+                  </motion.div>
                 ))}
               </motion.div>
               

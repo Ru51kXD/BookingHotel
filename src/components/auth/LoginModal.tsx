@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from '@/lib/motion';
 import { X, Mail, Lock, Eye, EyeOff, Loader, CheckCircle, Sparkles, ArrowRight, Heart } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
 import { useRouter } from 'next/navigation';
+import ForgotPasswordModal from './ForgotPasswordModal';
 
 interface LoginModalProps {
   isOpen: boolean;
@@ -20,6 +21,7 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [userName, setUserName] = useState('');
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
 
   const { login } = useAuth();
   const router = useRouter();
@@ -342,6 +344,17 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
                           {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                         </button>
                       </div>
+                      
+                      {/* Forgot Password Link */}
+                      <div className="mt-2 text-right">
+                        <button
+                          type="button"
+                          onClick={() => setShowForgotPassword(true)}
+                          className="text-sm text-blue-600 hover:text-blue-700 transition-colors"
+                        >
+                          Забыли пароль?
+                        </button>
+                      </div>
                     </div>
 
                     {/* Error Message */}
@@ -401,6 +414,16 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
           </motion.div>
         </>
       )}
+      
+      {/* Forgot Password Modal */}
+      <ForgotPasswordModal
+        isOpen={showForgotPassword}
+        onClose={() => setShowForgotPassword(false)}
+        onBackToLogin={() => {
+          setShowForgotPassword(false);
+          // Модальное окно входа уже открыто, просто закрываем восстановление пароля
+        }}
+      />
     </AnimatePresence>
   );
 } 

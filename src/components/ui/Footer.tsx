@@ -41,10 +41,9 @@ export default function Footer() {
       title: 'Компания',
       links: [
         { label: 'О нас', href: '/about' },
-        { label: 'Карьера', href: '/careers' },
-        { label: 'Блог', href: '/blog' },
         { label: 'Партнерам', href: '/partners' },
       ],
+      mainHref: '/company'
     },
     {
       title: 'Помощь',
@@ -54,6 +53,7 @@ export default function Footer() {
         { label: 'Правила', href: '/terms' },
         { label: 'Конфиденциальность', href: '/privacy' },
       ],
+      mainHref: '/help'
     },
     {
       title: 'Сервисы',
@@ -63,6 +63,7 @@ export default function Footer() {
         { label: 'Специальные предложения', href: '/offers' },
         { label: 'Подарочные сертификаты', href: '/gift-cards' },
       ],
+      mainHref: '/services'
     },
   ];
 
@@ -103,7 +104,11 @@ export default function Footer() {
           {/* Разделы */}
           {sections.map((section, index) => (
             <motion.div key={index} variants={childVariants}>
-              <h3 className="font-semibold text-lg mb-4">{section.title}</h3>
+              <Link href={section.mainHref}>
+                <h3 className="font-semibold text-lg mb-4 hover:text-white transition-colors cursor-pointer">
+                  {section.title}
+                </h3>
+              </Link>
               <ul className="space-y-2">
                 {section.links.map((link, linkIndex) => (
                   <li key={linkIndex}>

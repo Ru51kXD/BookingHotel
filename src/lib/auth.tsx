@@ -18,6 +18,7 @@ export interface User {
   phone?: string;
   role?: 'user' | 'admin';
   savedCards?: SavedCard[];
+  likedHotels?: string[]; // Массив ID лайкнутых отелей
   created_at?: string;
   updated_at?: string;
 }
@@ -32,6 +33,10 @@ interface AuthContextType {
   addSavedCard: (cardData: { cardNumber: string; cardHolder: string; expiryDate: string; cvv: string }) => Promise<{ success: boolean; error?: string }>;
   removeSavedCard: (cardId: string) => Promise<{ success: boolean; error?: string }>;
   setDefaultCard: (cardId: string) => Promise<{ success: boolean; error?: string }>;
+  verifyUserForPasswordReset: (email: string, phoneLastDigits: string) => Promise<{ success: boolean; error?: string; userId?: string }>;
+  resetPassword: (userId: string, newPassword: string) => Promise<{ success: boolean; error?: string }>;
+  toggleLikeHotel: (hotelId: string) => Promise<{ success: boolean; isLiked: boolean }>;
+  getLikedHotels: () => string[];
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -132,6 +137,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Симуляция API вызова для обычных пользователей
       await new Promise(resolve => setTimeout(resolve, 1000));
       
+      // Проверяем зарегистрированных пользователей
+      const registeredUsers = JSON.parse(localStorage.getItem('registered_users') || '[]');
+      const foundUser = registeredUsers.find((u: any) => u.email === email && u.password === password);
+      
+      if (foundUser) {
+        const userData: User = {
+          id: foundUser.id,
+          name: foundUser.name,
+          email: foundUser.email,
+          phone: foundUser.phone,
+          role: foundUser.role || 'user',
+          likedHotels: foundUser.likedHotels || [],
+          created_at: foundUser.created_at,
+          updated_at: foundUser.updated_at
+        };
+        
+        setUser(userData);
+        localStorage.setItem('hotel_user', JSON.stringify(userData));
+        setIsLoading(false);
+        return { success: true, user: userData };
+      }
+      
       // Mock login logic - в реальном приложении здесь будет API вызов
       if (email === 'user@example.com' && password === 'password') {
         const userData: User = {
@@ -139,6 +166,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           name: 'Тестовый пользователь',
           email: email,
           role: 'user',
+          likedHotels: [],
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         };
@@ -166,6 +194,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Симуляция API вызова
       await new Promise(resolve => setTimeout(resolve, 1000));
       
+      // Проверяем, не существует ли уже пользователь с таким email
+      const registeredUsers = JSON.parse(localStorage.getItem('registered_users') || '[]');
+      const existingUser = registeredUsers.find((u: any) => u.email === userData.email);
+      
+      if (existingUser) {
+        setIsLoading(false);
+        return { success: false, error: 'Пользователь с таким email уже существует' };
+      }
+      
       // Mock registration logic
       const newUser: User = {
         id: Date.now().toString(),
@@ -173,9 +210,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         email: userData.email,
         phone: userData.phone,
         role: 'user',
+        likedHotels: [],
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       };
+      
+      // Сохраняем пользователя с паролем для восстановления
+      const userWithPassword = {
+        ...newUser,
+        password: userData.password
+      };
+      
+      registeredUsers.push(userWithPassword);
+      localStorage.setItem('registered_users', JSON.stringify(registeredUsers));
       
       setUser(newUser);
       localStorage.setItem('hotel_user', JSON.stringify(newUser));
@@ -292,6 +339,134 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const verifyUserForPasswordReset = async (email: string, phoneLastDigits: string): Promise<{ success: boolean; error?: string; userId?: string }> => {
+    try {
+      // Симуляция API вызова
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Проверяем встроенных пользователей
+      if (email === 'admin@rulit.com') {
+        // У админа нет номера телефона, поэтому используем специальный код
+        if (phoneLastDigits === '2025') {
+          return { success: true, userId: 'admin-001' };
+        }
+        return { success: false, error: 'Неверные данные для восстановления пароля' };
+      }
+      
+      if (email === 'demo@example.com') {
+        // У демо пользователя проверяем последние цифры номера
+        if (phoneLastDigits === '1234') {
+          return { success: true, userId: 'demo-001' };
+        }
+        return { success: false, error: 'Неверные данные для восстановления пароля' };
+      }
+      
+      // Проверяем зарегистрированных пользователей из localStorage
+      const registeredUsers = JSON.parse(localStorage.getItem('registered_users') || '[]');
+      const foundUser = registeredUsers.find((u: any) => {
+        if (u.email !== email) return false;
+        if (!u.phone) return false;
+        
+        // Извлекаем последние 4 цифры из номера телефона
+        const phoneDigits = u.phone.replace(/\D/g, '');
+        const lastFourDigits = phoneDigits.slice(-4);
+        
+        return lastFourDigits === phoneLastDigits;
+      });
+      
+      if (foundUser) {
+        return { success: true, userId: foundUser.id };
+      }
+      
+      return { success: false, error: 'Пользователь с такими данными не найден' };
+    } catch (error) {
+      return { success: false, error: 'Произошла ошибка при проверке данных' };
+    }
+  };
+
+  const resetPassword = async (userId: string, newPassword: string): Promise<{ success: boolean; error?: string }> => {
+    try {
+      // Симуляция API вызова
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Обновляем пароль для встроенных пользователей
+      if (userId === 'admin-001') {
+        // В реальном приложении здесь бы обновлялся пароль в базе данных
+        // Для демонстрации просто возвращаем успех
+        return { success: true };
+      }
+      
+      if (userId === 'demo-001') {
+        // В реальном приложении здесь бы обновлялся пароль в базе данных
+        return { success: true };
+      }
+      
+      // Обновляем пароль для зарегистрированных пользователей
+      const registeredUsers = JSON.parse(localStorage.getItem('registered_users') || '[]');
+      const userIndex = registeredUsers.findIndex((u: any) => u.id === userId);
+      
+      if (userIndex !== -1) {
+        registeredUsers[userIndex].password = newPassword;
+        registeredUsers[userIndex].updated_at = new Date().toISOString();
+        localStorage.setItem('registered_users', JSON.stringify(registeredUsers));
+        return { success: true };
+      }
+      
+      return { success: false, error: 'Пользователь не найден' };
+    } catch (error) {
+      return { success: false, error: 'Произошла ошибка при сбросе пароля' };
+    }
+  };
+
+  const toggleLikeHotel = async (hotelId: string): Promise<{ success: boolean; isLiked: boolean }> => {
+    if (!user) return { success: false, isLiked: false };
+    
+    try {
+      // Симуляция API вызова
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      const currentLikes = user.likedHotels || [];
+      const isCurrentlyLiked = currentLikes.includes(hotelId);
+      
+      let updatedLikes: string[];
+      if (isCurrentlyLiked) {
+        // Удаляем лайк
+        updatedLikes = currentLikes.filter(id => id !== hotelId);
+      } else {
+        // Добавляем лайк
+        updatedLikes = [...currentLikes, hotelId];
+      }
+      
+      const updatedUser = {
+        ...user,
+        likedHotels: updatedLikes,
+        updated_at: new Date().toISOString()
+      };
+      
+      // Обновляем пользователя в localStorage
+      setUser(updatedUser);
+      localStorage.setItem('hotel_user', JSON.stringify(updatedUser));
+      
+      // Также обновляем в registered_users если это зарегистрированный пользователь
+      const registeredUsers = JSON.parse(localStorage.getItem('registered_users') || '[]');
+      const userIndex = registeredUsers.findIndex((u: any) => u.id === user.id);
+      if (userIndex !== -1) {
+        registeredUsers[userIndex].likedHotels = updatedLikes;
+        registeredUsers[userIndex].updated_at = new Date().toISOString();
+        localStorage.setItem('registered_users', JSON.stringify(registeredUsers));
+      }
+      
+      return { success: true, isLiked: !isCurrentlyLiked };
+    } catch (error) {
+      return { success: false, isLiked: false };
+    }
+  };
+
+  const getLikedHotels = () => {
+    if (!user || !user.likedHotels) return [];
+    return user.likedHotels;
+  };
+
   return (
     <AuthContext.Provider value={{
       user,
@@ -302,7 +477,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       updateUser,
       addSavedCard,
       removeSavedCard,
-      setDefaultCard
+      setDefaultCard,
+      verifyUserForPasswordReset,
+      resetPassword,
+      toggleLikeHotel,
+      getLikedHotels
     }}>
       {children}
     </AuthContext.Provider>

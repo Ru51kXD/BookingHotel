@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -26,8 +26,15 @@ import {
   Download,
   Shield,
   Save,
-  X
+  X,
+  Gift,
+  Tag,
+  Copy,
+  CreditCard,
+  Percent
 } from 'lucide-react';
+import { useAuth } from '@/lib/auth';
+import { getUserGiftCards, activateGiftCardByCode, isGiftCardValid, type UserGiftCard } from '@/lib/giftCards';
 
 // Динамический импорт компонентов
 const Navbar = dynamic(() => import('@/components/ui/Navbar'), { ssr: true });
@@ -147,6 +154,11 @@ export default function ProfilePage() {
     recommendations: true,
     newsletters: false
   });
+  const { user } = useAuth();
+  const [userGiftCards, setUserGiftCards] = useState<UserGiftCard[]>([]);
+  const [showActivateModal, setShowActivateModal] = useState(false);
+  const [activationCode, setActivationCode] = useState('');
+  const [copiedCode, setCopiedCode] = useState<string | null>(null);
 
   const tabs = [
     { id: 'overview', label: 'Обзор', icon: User },
@@ -198,6 +210,38 @@ export default function ProfilePage() {
     console.log('Cancelling booking:', bookingId);
   };
 
+  useEffect(() => {
+    if (user) {
+      const giftCards = getUserGiftCards(user.email);
+      setUserGiftCards(giftCards);
+    }
+  }, [user]);
+
+  const handleActivateCode = () => {
+    if (!user || !activationCode.trim()) return;
+
+    const giftCard = activateGiftCardByCode(activationCode.trim(), user.email);
+    if (giftCard) {
+      const updatedGiftCards = getUserGiftCards(user.email);
+      setUserGiftCards(updatedGiftCards);
+      alert(`Код "${activationCode}" успешно активирован!`);
+      setActivationCode('');
+      setShowActivateModal(false);
+    } else {
+      alert('Код недействителен или уже использован');
+    }
+  };
+
+  const copyToClipboard = (code: string) => {
+    navigator.clipboard.writeText(code);
+    setCopiedCode(code);
+    setTimeout(() => setCopiedCode(null), 2000);
+  };
+
+  const validGiftCards = userGiftCards.filter(ugc => isGiftCardValid(ugc.giftCard) && !ugc.giftCard.isUsed);
+  const usedGiftCards = userGiftCards.filter(ugc => ugc.giftCard.isUsed);
+  const expiredGiftCards = userGiftCards.filter(ugc => !isGiftCardValid(ugc.giftCard) && !ugc.giftCard.isUsed);
+
   // Анимации
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -220,6 +264,17 @@ export default function ProfilePage() {
       },
     },
   };
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gray-50 pt-20 flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-3xl font-bold text-gray-900 mb-4">Вход в систему</h1>
+          <p className="text-gray-600">Для просмотра профиля необходимо войти в систему</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -832,6 +887,60 @@ export default function ProfilePage() {
       </motion.section>
 
       <Footer />
+
+      {/* Activate Code Modal */}
+      {showActivateModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="bg-white rounded-2xl p-8 max-w-md w-full"
+          >
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">Активировать код</h2>
+            <p className="text-gray-600 mb-6">
+              Введите код подарочного сертификата или промокода
+            </p>
+            
+            <div className="space-y-4 mb-6">
+              <input
+                type="text"
+                value={activationCode}
+                onChange={(e) => setActivationCode(e.target.value.toUpperCase())}
+                placeholder="Введите код"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent font-mono text-lg text-center"
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter') {
+                    handleActivateCode();
+                  }
+                }}
+              />
+            </div>
+
+            <div className="flex gap-4">
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={handleActivateCode}
+                disabled={!activationCode.trim()}
+                className="flex-1 bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-3 rounded-lg font-semibold hover:from-indigo-700 hover:to-purple-700 transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Активировать
+              </motion.button>
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => {
+                  setShowActivateModal(false);
+                  setActivationCode('');
+                }}
+                className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 transition-colors"
+              >
+                Отмена
+              </motion.button>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </>
   );
 } 
