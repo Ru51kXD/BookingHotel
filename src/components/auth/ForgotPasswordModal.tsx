@@ -217,9 +217,10 @@ export default function ForgotPasswordModal({ isOpen, onClose, onBackToLogin }: 
       <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
         <h4 className="font-semibold text-blue-800 mb-2">Подсказки для восстановления:</h4>
         <ul className="text-sm text-blue-700 space-y-1">
-          <li>• Для admin@rulit.com используйте код: 2025</li>
+          <li>• Для admin@stayeasy.kz используйте код: 2025</li>
           <li>• Для demo@example.com используйте код: 1234</li>
-          <li>• Для других аккаунтов - последние 4 цифры вашего номера</li>
+          <li>• Для admin@rulit.com используйте код: 2025</li>
+          <li>• Для других аккаунтов - последние 4 цифры вашего номера телефона</li>
         </ul>
       </div>
     </motion.div>

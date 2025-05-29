@@ -167,14 +167,15 @@ export default function Home() {
   };
 
   const handleSearch = () => {
-    // Перенаправляем на страницу поиска с параметрами
-    const params = new URLSearchParams({
-      destination: searchData.destination,
-      checkIn: searchData.checkIn,
-      checkOut: searchData.checkOut,
-      guests: searchData.guests.toString()
-    });
-    window.location.href = `/search?${params.toString()}`;
+    // Перенаправляем на страницу отелей с параметрами поиска
+    const params = new URLSearchParams();
+    if (searchData.destination) params.append('q', searchData.destination);
+    if (searchData.checkIn) params.append('checkIn', searchData.checkIn);
+    if (searchData.checkOut) params.append('checkOut', searchData.checkOut);
+    if (searchData.guests) params.append('guests', searchData.guests.toString());
+    
+    // Переходим на страницу отелей вместо поиска для лучшего UX
+    window.location.href = `/hotels?${params.toString()}`;
   };
 
   return (

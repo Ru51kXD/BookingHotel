@@ -1,9 +1,13 @@
 'use client';
 
-import { useRef } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
+import Image from 'next/image';
+import Link from 'next/link';
 import { motion, useScroll, useTransform, useSpring } from '@/lib/motion';
 import { Search, SlidersHorizontal, ChevronDown, Wifi, Coffee, Car, Tv, AirVent, Utensils, Filter, Grid3X3, LayoutGrid, Bed, MapPin, Star } from 'lucide-react';
+import { getCategoryPlaceholder } from '@/lib/imageUtils';
+import { useCurrency } from '@/lib/currency';
 
 // Динамический импорт компонентов
 const Navbar = dynamic(() => import('@/components/ui/Navbar'), { ssr: true });
@@ -12,96 +16,18 @@ const HotelCard = dynamic(() => import('@/components/hotel/HotelCard'), { ssr: t
 const ParallaxBackground = dynamic(() => import('@/components/ui/ParallaxBackground'), { ssr: false });
 const AnimatedChart = dynamic(() => import('@/components/ui/AnimatedChart'), { ssr: false });
 
-// Данные для хостелов
-const hostels = [
-  {
-    id: 1,
-    name: 'Astana Backpackers',
-    location: 'Центр города, Астана',
-    rating: 4.5,
-    price: 3500,
-    image: '/images/hostel1.jpg',
-    amenities: ['wifi', 'breakfast', 'parking']
-  },
-  {
-    id: 2,
-    name: 'Nomad Hostel',
-    location: 'Есиль район, Астана',
-    rating: 4.3,
-    price: 2800,
-    image: '/images/hostel2.jpg',
-    amenities: ['wifi', 'breakfast']
-  },
-  {
-    id: 3,
-    name: 'City Center Hostel',
-    location: 'Алматы район, Алматы',
-    rating: 4.7,
-    price: 4200,
-    image: '/images/hostel3.jpg',
-    amenities: ['wifi', 'parking']
-  },
-  {
-    id: 4,
-    name: 'Хостел Метро',
-    image: '/images/hostel-1.jpg',
-    rating: 4.6,
-    price: 1200,
-    location: 'Москва, метро Сокольники',
-    description: 'Современный хостел рядом с метро с общими и приватными комнатами, кухней и лаунж-зоной.',
-    amenities: ['WiFi', 'Kitchen', 'Laundry', 'Lockers', 'Common Room'],
-  },
-  {
-    id: 5,
-    name: 'BackPacker Hub',
-    image: '/images/hostel-2.jpg',
-    rating: 4.8,
-    price: 950,
-    location: 'Москва, Арбат',
-    description: 'Уютный хостел в центре города с дружелюбной атмосферой и отличными удобствами для путешественников.',
-    amenities: ['WiFi', 'Kitchen', 'Bar', 'Tours', 'Breakfast'],
-  },
-  {
-    id: 6,
-    name: 'Дом Путешественника',
-    image: '/images/hostel-3.jpg',
-    rating: 4.5,
-    price: 1100,
-    location: 'Москва, Китай-город',
-    description: 'Стильный хостел в историческом районе с современными удобствами и отличным расположением.',
-    amenities: ['WiFi', 'Kitchen', 'Lockers', 'Luggage Storage'],
-  },
-  {
-    id: 7,
-    name: 'Urban Nest',
-    image: '/images/hostel-4.jpg',
-    rating: 4.7,
-    price: 1350,
-    location: 'Москва, Тверская',
-    description: 'Премиальный хостел с дизайнерским интерьером и высоким уровнем комфорта.',
-    amenities: ['WiFi', 'Kitchen', 'Gym', 'Rooftop', 'Coworking'],
-  },
-  {
-    id: 8,
-    name: 'Молодежный Дом',
-    image: '/images/hostel-5.jpg',
-    rating: 4.4,
-    price: 850,
-    location: 'Москва, Красные Ворота',
-    description: 'Бюджетный хостел с веселой атмосферой и активной программой мероприятий.',
-    amenities: ['WiFi', 'Kitchen', 'Games', 'Events', 'Library'],
-  },
-  {
-    id: 9,
-    name: 'Sleep & Meet',
-    image: '/images/hostel-6.jpg',
-    rating: 4.3,
-    price: 1050,
-    location: 'Москва, Парк Культуры',
-    description: 'Социальный хостел с акцентом на знакомства и культурный обмен между путешественниками.',
-    amenities: ['WiFi', 'Kitchen', 'Social Events', 'Tours', 'Bar'],
-  },
-];
+interface Hostel {
+  id: number;
+  name: string;
+  category: string;
+  city: string;
+  address: string;
+  price_per_night: number;
+  rating: number;
+  image_url: string;
+  description: string;
+  amenities: string;
+}
 
 const filterCategories = [
   {
@@ -126,28 +52,38 @@ const filterCategories = [
   {
     name: 'Цена за ночь',
     options: [
-      { label: 'До 1000 ₽', value: 'price_1', icon: undefined },
-      { label: '1000 - 1500 ₽', value: 'price_2', icon: undefined },
-      { label: '1500 - 2000 ₽', value: 'price_3', icon: undefined },
-      { label: 'Более 2000 ₽', value: 'price_4', icon: undefined },
+      { label: 'До 3000 ₽', value: 'price_1', icon: undefined },
+      { label: '3000 - 6000 ₽', value: 'price_2', icon: undefined },
+      { label: '6000 - 10000 ₽', value: 'price_3', icon: undefined },
+      { label: 'Более 10000 ₽', value: 'price_4', icon: undefined },
     ],
   },
 ];
 
 // Данные для графиков хостелов
 const hostelStatsData = [
-  { label: 'Общие комнаты', value: 65, color: 'from-blue-500 to-cyan-500' },
-  { label: 'Приватные', value: 25, color: 'from-green-500 to-emerald-500' },
-  { label: 'Женские', value: 10, color: 'from-purple-500 to-pink-500' }
+  { label: 'Бюджетные', value: 65, color: 'from-blue-500 to-cyan-500' },
+  { label: 'Комфорт', value: 25, color: 'from-green-500 to-emerald-500' },
+  { label: 'Премиум', value: 10, color: 'from-purple-500 to-pink-500' }
 ];
 
-const ageGroupData = [
-  { label: '18-25', value: 45, color: 'from-yellow-500 to-orange-500' },
-  { label: '26-35', value: 35, color: 'from-blue-500 to-cyan-500' },
-  { label: '36+', value: 20, color: 'from-green-500 to-emerald-500' }
+const cityData = [
+  { label: 'Москва', value: 45, color: 'from-yellow-500 to-orange-500' },
+  { label: 'Спб', value: 35, color: 'from-blue-500 to-cyan-500' },
+  { label: 'Другие', value: 20, color: 'from-green-500 to-emerald-500' }
 ];
 
 export default function HostelsPage() {
+  const [hostels, setHostels] = useState<Hostel[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filters, setFilters] = useState({
+    search: '',
+    city: '',
+    maxPrice: '',
+    minRating: ''
+  });
+  
+  const { formatPrice } = useCurrency();
   const containerRef = useRef(null);
   const heroRef = useRef(null);
   
@@ -159,11 +95,84 @@ export default function HostelsPage() {
   // Параллакс эффекты для Hero секции
   const heroY = useTransform(scrollYProgress, [0, 1], ["0%", "50%"]);
   const heroOpacity = useTransform(scrollYProgress, [0, 0.5, 1], [1, 0.8, 0.3]);
-  const heroScale = useTransform(scrollYProgress, [0, 1], [1, 1.1]);
 
   // Плавные анимации
   const smoothHeroY = useSpring(heroY, { stiffness: 100, damping: 30 });
   const smoothHeroOpacity = useSpring(heroOpacity, { stiffness: 100, damping: 30 });
+
+  // Загружаем хостелы при инициализации
+  useEffect(() => {
+    fetchHostels();
+  }, []);
+
+  // Обновляем результаты при изменении фильтров
+  useEffect(() => {
+    if (!loading) {
+      fetchHostels();
+    }
+  }, [filters]);
+
+  const fetchHostels = async () => {
+    try {
+      setLoading(true);
+      
+      // Формируем параметры для API (ищем бюджетные отели)
+      const params = new URLSearchParams();
+      params.append('category', 'budget'); // Ищем бюджетные отели как хостелы
+      
+      if (filters.search) params.append('q', filters.search);
+      if (filters.city) params.append('city', filters.city);
+
+      const response = await fetch(`/api/hotels?${params.toString()}`);
+      const data = await response.json();
+      
+      if (data.success) {
+        let filteredHostels = data.data;
+        
+        // Дополнительная фильтрация по цене (хостелы обычно дешевле)
+        filteredHostels = filteredHostels.filter((hotel: Hostel) => 
+          hotel.price_per_night <= 15000 // Только недорогие варианты
+        );
+        
+        if (filters.maxPrice) {
+          filteredHostels = filteredHostels.filter((hotel: Hostel) => 
+            hotel.price_per_night <= parseInt(filters.maxPrice)
+          );
+        }
+        
+        if (filters.minRating) {
+          filteredHostels = filteredHostels.filter((hotel: Hostel) => 
+            hotel.rating >= parseFloat(filters.minRating)
+          );
+        }
+
+        setHostels(filteredHostels);
+      } else {
+        console.error('Ошибка загрузки хостелов:', data.error);
+        setHostels([]);
+      }
+    } catch (error) {
+      console.error('Ошибка загрузки хостелов:', error);
+      setHostels([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const parseAmenities = (amenities: string | null | undefined): string[] => {
+    if (!amenities) return [];
+    
+    try {
+      const parsed = JSON.parse(amenities);
+      if (Array.isArray(parsed)) {
+        return parsed;
+      }
+    } catch (e) {
+      // Если не JSON, то обрабатываем как строку с запятыми
+    }
+    
+    return amenities.split(',').filter(a => a.trim()).map(a => a.trim());
+  };
 
   // Анимация контейнера
   const containerVariants = {
@@ -192,12 +201,32 @@ export default function HostelsPage() {
   };
 
   const getAmenityIcon = (amenity: string) => {
-    switch (amenity) {
-      case 'wifi': return <Wifi className="w-4 h-4" />;
-      case 'breakfast': return <Coffee className="w-4 h-4" />;
-      case 'parking': return <Car className="w-4 h-4" />;
-      default: return null;
+    switch (amenity.toLowerCase()) {
+      case 'wifi': 
+      case 'wi-fi': 
+        return <Wifi className="w-4 h-4" />;
+      case 'breakfast':
+      case 'завтрак':
+        return <Coffee className="w-4 h-4" />;
+      case 'parking':
+      case 'парковка':
+        return <Car className="w-4 h-4" />;
+      default: 
+        return null;
     }
+  };
+
+  const renderStars = (rating: number) => {
+    return Array.from({ length: 5 }, (_, i) => (
+      <Star
+        key={i}
+        className={`w-4 h-4 ${
+          i < Math.floor(rating) 
+            ? 'text-yellow-400 fill-current' 
+            : 'text-gray-300'
+        }`}
+      />
+    ));
   };
 
   return (
@@ -212,7 +241,7 @@ export default function HostelsPage() {
         >
           {/* Параллакс фон */}
           <motion.div
-            style={{ y: smoothHeroY, scale: heroScale, opacity: smoothHeroOpacity }}
+            style={{ y: smoothHeroY, scale: smoothHeroY, opacity: smoothHeroOpacity }}
             className="absolute inset-0 w-full h-[120%] -top-[10%]"
           >
             <div className="absolute inset-0 bg-[url('/images/pattern.svg')] opacity-20 bg-center"></div>
@@ -428,9 +457,9 @@ export default function HostelsPage() {
 
             <motion.div variants={itemVariants}>
               <AnimatedChart
-                data={ageGroupData}
+                data={cityData}
                 type="bar"
-                title="Возрастные группы гостей"
+                title="Города"
               />
             </motion.div>
           </div>
@@ -495,6 +524,7 @@ export default function HostelsPage() {
                   Фильтры
                 </motion.h2>
                 <motion.button 
+                  onClick={() => setFilters({ search: '', city: '', maxPrice: '', minRating: '' })}
                   className="text-green-600 text-sm font-medium hover:text-green-800 transition-colors bg-green-50 px-4 py-2 rounded-full"
                   whileHover={{ 
                     scale: 1.05, 
@@ -508,75 +538,86 @@ export default function HostelsPage() {
                 </motion.button>
               </div>
               
-              {/* Filter Sections */}
-              <div className="space-y-8">
-                {filterCategories.map((category, idx) => (
-                  <motion.div 
-                    key={idx} 
-                    className="border-b border-gray-200/50 pb-6"
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: idx * 0.1 }}
-                    whileHover={{ x: 5 }}
-                  >
-                    <motion.h3 
-                      className="font-semibold text-gray-700 mb-6 text-lg flex items-center"
-                      whileHover={{ color: "#059669" }}
-                    >
-                      {category.name}
-                    </motion.h3>
-                    <div className="space-y-4">
-                      {category.options.map((option, optionIdx) => (
-                        <motion.label 
-                          key={optionIdx} 
-                          className="flex items-center gap-3 cursor-pointer group p-2 rounded-lg hover:bg-green-50 transition-colors"
-                          whileHover={{ x: 5, scale: 1.02 }}
-                          transition={{ duration: 0.2 }}
-                        >
-                          <motion.div
-                            className="w-6 h-6 border-2 border-gray-300 rounded-lg flex items-center justify-center relative bg-white group-hover:border-green-500 transition-colors"
-                            whileHover={{ 
-                              borderColor: '#059669', 
-                              scale: 1.1,
-                              rotate: 5
-                            }}
-                          >
-                            <input
-                              type="checkbox"
-                              className="absolute opacity-0 w-full h-full cursor-pointer"
-                              name={option.value}
-                            />
-                          </motion.div>
-                          <span className="text-gray-700 flex items-center gap-2 group-hover:text-green-600 transition-colors font-medium">
-                            {option.icon && (
-                              <motion.span
-                                whileHover={{ scale: 1.2, color: "#059669" }}
-                                className="text-gray-500"
-                              >
-                                {option.icon}
-                              </motion.span>
-                            )}
-                            {option.label}
-                          </span>
-                        </motion.label>
-                      ))}
-                    </div>
-                  </motion.div>
-                ))}
+              {/* Search Input */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Поиск хостелов
+                </label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                  <input
+                    type="text"
+                    placeholder="Название, город..."
+                    value={filters.search}
+                    onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+                    className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all"
+                  />
+                </div>
+              </div>
+
+              {/* City Filter */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Город
+                </label>
+                <div className="relative">
+                  <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                  <input
+                    type="text"
+                    placeholder="Выберите город..."
+                    value={filters.city}
+                    onChange={(e) => setFilters({ ...filters, city: e.target.value })}
+                    className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all"
+                  />
+                </div>
+              </div>
+
+              {/* Price Filter */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Максимальная цена за ночь
+                </label>
+                <input
+                  type="number"
+                  placeholder="Введите сумму..."
+                  value={filters.maxPrice}
+                  onChange={(e) => setFilters({ ...filters, maxPrice: e.target.value })}
+                  className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all"
+                />
+              </div>
+
+              {/* Rating Filter */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Минимальный рейтинг
+                </label>
+                <select
+                  value={filters.minRating}
+                  onChange={(e) => setFilters({ ...filters, minRating: e.target.value })}
+                  className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all"
+                >
+                  <option value="">Любой рейтинг</option>
+                  <option value="4.5">4.5+ звезд</option>
+                  <option value="4.0">4.0+ звезд</option>
+                  <option value="3.5">3.5+ звезд</option>
+                  <option value="3.0">3.0+ звезд</option>
+                </select>
               </div>
               
-              {/* Apply Filters Button */}
-              <motion.button
-                whileHover={{ 
-                  scale: 1.02,
-                  boxShadow: "0 15px 30px rgba(5, 150, 105, 0.4)"
-                }}
-                whileTap={{ scale: 0.98 }}
-                className="w-full mt-8 bg-gradient-to-r from-green-600 to-cyan-600 text-white py-4 px-6 rounded-xl hover:from-green-700 hover:to-cyan-700 transition-all flex items-center justify-center font-semibold shadow-lg text-lg"
-              >
-                <SlidersHorizontal size={20} className="mr-2" />
-                Применить фильтры
-              </motion.button>
+              {/* Filter Sections - Удаляем старые статичные фильтры */}
+              <div className="space-y-6 border-t pt-6">
+                <h3 className="font-semibold text-gray-700 text-lg">
+                  Популярные удобства
+                </h3>
+                <div className="space-y-3">
+                  {['Wi-Fi', 'Кухня', 'Прачечная', 'Общая зона'].map((amenity, idx) => (
+                    <div key={idx} className="flex items-center text-sm text-gray-600">
+                      <div className="w-2 h-2 bg-green-400 rounded-full mr-3"></div>
+                      {amenity}
+                    </div>
+                  ))}
+                </div>
+              </div>
             </motion.aside>
             
             {/* Hostels Grid */}
@@ -644,57 +685,122 @@ export default function HostelsPage() {
                 className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8"
                 variants={containerVariants}
               >
-                {hostels.map((hostel, index) => (
+                {loading ? (
+                  // Loading State
+                  Array.from({ length: 6 }).map((_, index) => (
+                    <motion.div
+                      key={index}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.1 }}
+                      className="bg-white rounded-lg shadow-lg overflow-hidden"
+                    >
+                      <div className="h-48 bg-gray-200 animate-pulse"></div>
+                      <div className="p-6 space-y-4">
+                        <div className="h-6 bg-gray-200 rounded animate-pulse"></div>
+                        <div className="h-4 bg-gray-200 rounded animate-pulse w-3/4"></div>
+                        <div className="h-4 bg-gray-200 rounded animate-pulse w-1/2"></div>
+                        <div className="h-10 bg-gray-200 rounded animate-pulse"></div>
+                      </div>
+                    </motion.div>
+                  ))
+                ) : hostels.length > 0 ? (
+                  hostels.map((hostel, index) => (
+                    <motion.div
+                      key={hostel.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.1 }}
+                      className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow"
+                    >
+                      <div className="h-48 relative">
+                        <Image
+                          src={getCategoryPlaceholder(hostel.category, 400, 192, hostel.name)}
+                          alt={hostel.name}
+                          fill
+                          className="object-cover"
+                        />
+                        <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-full text-sm font-medium text-gray-700">
+                          {hostel.category}
+                        </div>
+                      </div>
+                      
+                      <div className="p-6">
+                        <h3 className="text-xl font-semibold text-gray-800 mb-2">{hostel.name}</h3>
+                        
+                        <div className="flex items-center text-gray-600 mb-2">
+                          <MapPin className="w-4 h-4 mr-1" />
+                          <span className="text-sm">{hostel.city}, {hostel.address}</span>
+                        </div>
+                        
+                        <div className="flex items-center mb-4">
+                          <div className="flex items-center mr-2">
+                            {renderStars(hostel.rating)}
+                          </div>
+                          <span className="text-sm text-gray-600">{hostel.rating.toFixed(1)}</span>
+                        </div>
+                        
+                        {hostel.description && (
+                          <p className="text-sm text-gray-600 mb-4 line-clamp-2">
+                            {hostel.description}
+                          </p>
+                        )}
+                        
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex space-x-2">
+                            {parseAmenities(hostel.amenities).slice(0, 3).map((amenity, idx) => (
+                              <div key={idx} className="text-gray-500" title={amenity}>
+                                {getAmenityIcon(amenity) || <span className="text-xs bg-gray-100 px-2 py-1 rounded">{amenity}</span>}
+                              </div>
+                            ))}
+                          </div>
+                          <div className="text-right">
+                            <div className="text-2xl font-bold text-green-600">
+                              {formatPrice(hostel.price_per_night)}
+                            </div>
+                            <div className="text-sm text-gray-500">за ночь</div>
+                          </div>
+                        </div>
+                        
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => window.open(`/hotel/${hostel.id}`, '_blank')}
+                          className="w-full bg-green-600 text-white py-3 rounded-lg font-semibold hover:bg-green-700 transition-colors"
+                        >
+                          Подробнее
+                        </motion.button>
+                      </div>
+                    </motion.div>
+                  ))
+                ) : (
+                  // Empty State
                   <motion.div
-                    key={hostel.id}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.1 }}
-                    className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow"
+                    className="col-span-full text-center py-16"
                   >
-                    <div className="h-48 bg-gradient-to-r from-indigo-400 to-purple-500 flex items-center justify-center">
-                      <Bed className="w-16 h-16 text-white" />
-                    </div>
-                    
-                    <div className="p-6">
-                      <h3 className="text-xl font-semibold text-gray-800 mb-2">{hostel.name}</h3>
-                      
-                      <div className="flex items-center text-gray-600 mb-2">
-                        <MapPin className="w-4 h-4 mr-1" />
-                        <span className="text-sm">{hostel.location}</span>
+                    <div className="max-w-md mx-auto">
+                      <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <Search className="w-12 h-12 text-gray-400" />
                       </div>
-                      
-                      <div className="flex items-center mb-4">
-                        <Star className="w-4 h-4 text-yellow-400 mr-1" />
-                        <span className="text-sm text-gray-600">{hostel.rating}</span>
-                      </div>
-                      
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="flex space-x-2">
-                          {hostel.amenities.map((amenity, idx) => (
-                            <div key={idx} className="text-gray-500">
-                              {getAmenityIcon(amenity)}
-                            </div>
-                          ))}
-                        </div>
-                        <div className="text-right">
-                          <div className="text-2xl font-bold text-indigo-600">
-                            {hostel.price.toLocaleString()} ₸
-                          </div>
-                          <div className="text-sm text-gray-500">за ночь</div>
-                        </div>
-                      </div>
-                      
+                      <h3 className="text-xl font-semibold text-gray-900 mb-4">
+                        Хостелы не найдены
+                      </h3>
+                      <p className="text-gray-600 mb-6">
+                        Попробуйте изменить параметры поиска или фильтры
+                      </p>
                       <motion.button
+                        onClick={() => setFilters({ search: '', city: '', maxPrice: '', minRating: '' })}
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
-                        className="w-full bg-indigo-600 text-white py-2 rounded-lg font-semibold hover:bg-indigo-700 transition-colors"
+                        className="bg-green-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-700 transition-colors"
                       >
-                        Забронировать
+                        Сбросить фильтры
                       </motion.button>
                     </div>
                   </motion.div>
-                ))}
+                )}
               </motion.div>
               
               {/* Pagination */}

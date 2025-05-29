@@ -18,7 +18,8 @@ import {
   MapPin,
   Clock,
   Shield,
-  ArrowRight
+  ArrowRight,
+  Heart
 } from 'lucide-react';
 import LoginModal from '@/components/auth/LoginModal';
 import RegisterModal from '@/components/auth/RegisterModal';
@@ -168,6 +169,14 @@ export default function AccountPage() {
       href: '/account/bookings',
       color: 'from-blue-500 to-blue-600',
       count: bookings.length
+    },
+    {
+      title: 'Избранные отели',
+      description: 'Сохраненные отели',
+      icon: Heart,
+      href: '/account/favorites',
+      color: 'from-red-500 to-red-600',
+      count: user?.likedHotels?.length || 0
     },
     {
       title: 'Способы оплаты',

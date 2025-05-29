@@ -56,6 +56,7 @@ const DEMO_USER: User = {
   id: 'demo-001',
   name: 'Демо Пользователь',
   email: 'demo@example.com',
+  phone: '+7 777 123 1234',
   role: 'user',
   savedCards: [
     {
@@ -347,27 +348,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const verifyUserForPasswordReset = async (email: string, phoneLastDigits: string): Promise<{ success: boolean; error?: string; userId?: string }> => {
     try {
-      // Симуляция API вызова
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Сначала пробуем через API
+      const response = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email,
+          phoneLastDigits,
+          step: 'verify'
+        }),
+      });
+
+      const result = await response.json();
       
-      // Проверяем встроенных пользователей
-      if (email === 'admin@rulit.com') {
-        // У админа нет номера телефона, поэтому используем специальный код
-        if (phoneLastDigits === '2025') {
-          return { success: true, userId: 'admin-001' };
-        }
-        return { success: false, error: 'Неверные данные для восстановления пароля' };
+      if (result.success) {
+        return { success: true, userId: result.userId };
       }
-      
-      if (email === 'demo@example.com') {
-        // У демо пользователя проверяем последние цифры номера
-        if (phoneLastDigits === '1234') {
-          return { success: true, userId: 'demo-001' };
-        }
-        return { success: false, error: 'Неверные данные для восстановления пароля' };
-      }
-      
-      // Проверяем зарегистрированных пользователей из localStorage
+
+      // Если API не нашел, проверяем зарегистрированных пользователей из localStorage
       const registeredUsers = JSON.parse(localStorage.getItem('registered_users') || '[]');
       const foundUser = registeredUsers.find((u: any) => {
         if (u.email !== email) return false;
@@ -384,7 +384,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { success: true, userId: foundUser.id };
       }
       
-      return { success: false, error: 'Пользователь с такими данными не найден' };
+      return { success: false, error: result.error || 'Пользователь с такими данными не найден' };
     } catch (error) {
       return { success: false, error: 'Произошла ошибка при проверке данных' };
     }
@@ -392,22 +392,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const resetPassword = async (userId: string, newPassword: string): Promise<{ success: boolean; error?: string }> => {
     try {
-      // Симуляция API вызова
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Пробуем через API для встроенных пользователей
+      const response = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId,
+          newPassword,
+          step: 'reset'
+        }),
+      });
+
+      const result = await response.json();
       
-      // Обновляем пароль для встроенных пользователей
-      if (userId === 'admin-001') {
-        // В реальном приложении здесь бы обновлялся пароль в базе данных
-        // Для демонстрации просто возвращаем успех
+      if (result.success) {
         return { success: true };
       }
-      
-      if (userId === 'demo-001') {
-        // В реальном приложении здесь бы обновлялся пароль в базе данных
-        return { success: true };
-      }
-      
-      // Обновляем пароль для зарегистрированных пользователей
+
+      // Обновляем пароль для зарегистрированных пользователей в localStorage
       const registeredUsers = JSON.parse(localStorage.getItem('registered_users') || '[]');
       const userIndex = registeredUsers.findIndex((u: any) => u.id === userId);
       
@@ -418,7 +422,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { success: true };
       }
       
-      return { success: false, error: 'Пользователь не найден' };
+      return { success: false, error: result.error || 'Пользователь не найден' };
     } catch (error) {
       return { success: false, error: 'Произошла ошибка при сбросе пароля' };
     }

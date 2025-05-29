@@ -37,7 +37,10 @@ function HotelsPageContent() {
     city: searchParams.get('city') || '',
     minPrice: '',
     maxPrice: '',
-    minRating: ''
+    minRating: '',
+    checkIn: searchParams.get('checkIn') || '',
+    checkOut: searchParams.get('checkOut') || '',
+    guests: searchParams.get('guests') || '1'
   });
 
   useEffect(() => {
@@ -65,92 +68,46 @@ function HotelsPageContent() {
     try {
       setLoading(true);
       
-      // Загружаем отели из localStorage (созданные через админку)
-      const storedHotels = localStorage.getItem('admin_hotels');
-      let hotelsFromStorage: Hotel[] = [];
+      // Формируем параметры для API
+      const params = new URLSearchParams();
       
-      if (storedHotels) {
-        hotelsFromStorage = JSON.parse(storedHotels).map((hotel: any) => ({
-          ...hotel,
-          id: hotel.id.toString(), // Приводим к строке для совместимости
-          // Адаптируем поля если нужно
-          latitude: hotel.latitude || 0,
-          longitude: hotel.longitude || 0
-        }));
-      }
-      
-      // Загружаем отели из API
-      let apiHotels: Hotel[] = [];
-      try {
-        const params = new URLSearchParams();
-        
-        if (filters.search) params.append('q', filters.search);
-        if (filters.category) params.append('category', filters.category);
-        if (filters.city) params.append('city', filters.city);
+      if (filters.search) params.append('q', filters.search);
+      if (filters.category) params.append('category', filters.category);
+      if (filters.city) params.append('city', filters.city);
 
-        const response = await fetch(`/api/hotels?${params.toString()}`);
-        const data = await response.json();
+      const response = await fetch(`/api/hotels?${params.toString()}`);
+      const data = await response.json();
+      
+      if (data.success) {
+        let filteredHotels = data.data;
         
-        if (data.success) {
-          apiHotels = data.data;
+        // Дополнительная фильтрация по цене и рейтингу на клиенте
+        if (filters.minPrice) {
+          filteredHotels = filteredHotels.filter((hotel: Hotel) => 
+            hotel.price_per_night >= parseInt(filters.minPrice)
+          );
         }
-      } catch (apiError) {
-        console.log('API недоступно, используем только localStorage');
-      }
-      
-      // Объединяем отели из localStorage и API
-      const allHotels = [...hotelsFromStorage, ...apiHotels];
-      
-      // Удаляем дубликаты по id (приоритет у localStorage)
-      const uniqueHotels = allHotels.filter((hotel, index, self) => 
-        index === self.findIndex((h) => h.id.toString() === hotel.id.toString())
-      );
-      
-      let filteredHotels = uniqueHotels;
-      
-      // Применяем фильтры
-      if (filters.search) {
-        filteredHotels = filteredHotels.filter((hotel: Hotel) => 
-          hotel.name.toLowerCase().includes(filters.search.toLowerCase()) ||
-          hotel.city.toLowerCase().includes(filters.search.toLowerCase()) ||
-          hotel.address.toLowerCase().includes(filters.search.toLowerCase())
-        );
-      }
-      
-      if (filters.category) {
-        filteredHotels = filteredHotels.filter((hotel: Hotel) => 
-          hotel.category === filters.category
-        );
-      }
-      
-      if (filters.city) {
-        filteredHotels = filteredHotels.filter((hotel: Hotel) => 
-          hotel.city.toLowerCase().includes(filters.city.toLowerCase())
-        );
-      }
-      
-      // Фильтрация по цене и рейтингу на клиенте
-      if (filters.minPrice) {
-        filteredHotels = filteredHotels.filter((hotel: Hotel) => 
-          hotel.price_per_night >= parseInt(filters.minPrice)
-        );
-      }
-      
-      if (filters.maxPrice) {
-        filteredHotels = filteredHotels.filter((hotel: Hotel) => 
-          hotel.price_per_night <= parseInt(filters.maxPrice)
-        );
-      }
-      
-      if (filters.minRating) {
-        filteredHotels = filteredHotels.filter((hotel: Hotel) => 
-          hotel.rating >= parseFloat(filters.minRating)
-        );
-      }
+        
+        if (filters.maxPrice) {
+          filteredHotels = filteredHotels.filter((hotel: Hotel) => 
+            hotel.price_per_night <= parseInt(filters.maxPrice)
+          );
+        }
+        
+        if (filters.minRating) {
+          filteredHotels = filteredHotels.filter((hotel: Hotel) => 
+            hotel.rating >= parseFloat(filters.minRating)
+          );
+        }
 
-      setHotels(filteredHotels);
+        setHotels(filteredHotels);
+      } else {
+        console.error('Ошибка загрузки отелей:', data.error);
+        setHotels([]);
+      }
     } catch (error) {
       console.error('Ошибка загрузки отелей:', error);
+      setHotels([]);
     } finally {
       setLoading(false);
     }
@@ -181,7 +138,10 @@ function HotelsPageContent() {
       city: '',
       minPrice: '',
       maxPrice: '',
-      minRating: ''
+      minRating: '',
+      checkIn: '',
+      checkOut: '',
+      guests: '1'
     });
   };
 

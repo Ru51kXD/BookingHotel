@@ -36,7 +36,11 @@ import {
   ShoppingCart,
   FileText,
   UserCheck,
-  UserX
+  UserX,
+  MessageCircle,
+  Reply,
+  Archive,
+  AlertTriangle
 } from 'lucide-react';
 import { 
   getPartnerApplications, 
@@ -47,8 +51,10 @@ import {
   type GiftCardPurchase,
   type OfferUsage
 } from '@/lib/admin';
+import { SupportMessage } from '@/app/api/support/route';
 import EditHotelModal from '@/components/admin/EditHotelModal';
 import EditUserModal from '@/components/admin/EditUserModal';
+import SupportResponseModal from '@/components/admin/SupportResponseModal';
 
 interface AdminHotel {
   id: number | string;
@@ -97,6 +103,9 @@ export default function AdminPage() {
   const [userSearch, setUserSearch] = useState('');
   const [isEditUserModalOpen, setIsEditUserModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
+  const [supportMessages, setSupportMessages] = useState<SupportMessage[]>([]);
+  const [isResponseModalOpen, setIsResponseModalOpen] = useState(false);
+  const [selectedSupportMessage, setSelectedSupportMessage] = useState<SupportMessage | null>(null);
 
   // Универсальная функция для парсинга amenities
   const parseAmenities = (amenities: string | null | undefined): string[] => {
@@ -130,6 +139,7 @@ export default function AdminPage() {
         setUsages(getOfferUsages());
         await loadHotels();
         loadUsers();
+        await loadSupportMessages();
         setLoading(false); // Устанавливаем loading в false после загрузки
       } else {
         setLoading(false); // Также устанавливаем false если пользователь не админ
@@ -518,6 +528,168 @@ export default function AdminPage() {
     }
   };
 
+  const loadSupportMessages = async () => {
+    try {
+      // Демо-сообщения для примера
+      const demoMessages: SupportMessage[] = [
+        {
+          id: 'support_demo_1',
+          name: 'Анна Иванова',
+          email: 'anna@example.com',
+          subject: 'Проблема с бронированием',
+          message: 'Здравствуйте! У меня проблема с отменой бронирования. Не могу найти кнопку отмены в личном кабинете.',
+          status: 'new',
+          priority: 'high',
+          created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+          updated_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()
+        },
+        {
+          id: 'support_demo_2',
+          name: 'Михаил Петров',
+          email: 'mikhail@example.com',
+          subject: 'Вопрос о возврате',
+          message: 'Добрый день! Хочу уточнить сроки возврата средств после отмены бронирования.',
+          status: 'in_progress',
+          priority: 'medium',
+          created_at: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
+          updated_at: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
+          admin_response: 'Возврат средств происходит в течение 5-7 рабочих дней.',
+          admin_response_date: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
+          admin_id: 'admin-1'
+        },
+        {
+          id: 'support_demo_3',
+          name: 'Елена Сидорова',
+          email: 'elena@example.com',
+          subject: 'Изменение даты заезда',
+          message: 'Нужно изменить дату заезда. Возможно ли это сделать бесплатно?',
+          status: 'resolved',
+          priority: 'low',
+          created_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+          updated_at: new Date(Date.now() - 20 * 60 * 60 * 1000).toISOString(),
+          admin_response: 'Да, изменение возможно бесплатно при наличии свободных номеров.',
+          admin_response_date: new Date(Date.now() - 20 * 60 * 60 * 1000).toISOString(),
+          admin_id: 'admin-1'
+        }
+      ];
+
+      // Загружаем реальные сообщения из localStorage
+      let realMessages: SupportMessage[] = [];
+      if (typeof window !== 'undefined') {
+        try {
+          const stored = localStorage.getItem('support_messages');
+          if (stored) {
+            realMessages = JSON.parse(stored);
+          }
+        } catch (error) {
+          console.error('Ошибка загрузки сообщений из localStorage:', error);
+        }
+      }
+
+      // Объединяем демо-сообщения с реальными, убираем дубликаты по ID
+      const allMessages = [...demoMessages];
+      
+      realMessages.forEach(realMsg => {
+        const isDuplicate = allMessages.some(existingMsg => existingMsg.id === realMsg.id);
+        if (!isDuplicate) {
+          allMessages.push(realMsg);
+        }
+      });
+
+      // Сортируем по дате создания (новые сначала)
+      allMessages.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      
+      setSupportMessages(allMessages);
+    } catch (error) {
+      console.error('Ошибка загрузки сообщений поддержки:', error);
+    }
+  };
+
+  const handleSupportResponse = async (messageId: string, response: string) => {
+    try {
+      // Обновляем состояние
+      setSupportMessages(prev => 
+        prev.map(msg => 
+          msg.id === messageId 
+            ? {
+                ...msg,
+                status: 'in_progress' as const,
+                admin_response: response,
+                admin_response_date: new Date().toISOString(),
+                admin_id: user?.id || 'admin-1',
+                updated_at: new Date().toISOString()
+              }
+            : msg
+        )
+      );
+
+      // Сохраняем в localStorage для реальных сообщений
+      if (typeof window !== 'undefined') {
+        try {
+          const stored = localStorage.getItem('support_messages');
+          if (stored) {
+            const messages: SupportMessage[] = JSON.parse(stored);
+            const updatedMessages = messages.map(msg => 
+              msg.id === messageId 
+                ? {
+                    ...msg,
+                    status: 'in_progress' as const,
+                    admin_response: response,
+                    admin_response_date: new Date().toISOString(),
+                    admin_id: user?.id || 'admin-1',
+                    updated_at: new Date().toISOString()
+                  }
+                : msg
+            );
+            localStorage.setItem('support_messages', JSON.stringify(updatedMessages));
+          }
+        } catch (error) {
+          console.error('Ошибка сохранения ответа в localStorage:', error);
+        }
+      }
+      
+      // Здесь можно добавить отправку email пользователю
+      alert('Ответ отправлен пользователю на email');
+    } catch (error) {
+      console.error('Ошибка отправки ответа:', error);
+      alert('Ошибка при отправке ответа');
+    }
+  };
+
+  const openResponseModal = (message: SupportMessage) => {
+    setSelectedSupportMessage(message);
+    setIsResponseModalOpen(true);
+  };
+
+  const handleUpdateMessageStatus = (messageId: string, status: SupportMessage['status']) => {
+    // Обновляем состояние
+    setSupportMessages(prev =>
+      prev.map(msg =>
+        msg.id === messageId
+          ? { ...msg, status, updated_at: new Date().toISOString() }
+          : msg
+      )
+    );
+
+    // Сохраняем в localStorage для реальных сообщений
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('support_messages');
+        if (stored) {
+          const messages: SupportMessage[] = JSON.parse(stored);
+          const updatedMessages = messages.map(msg => 
+            msg.id === messageId 
+              ? { ...msg, status, updated_at: new Date().toISOString() }
+              : msg
+          );
+          localStorage.setItem('support_messages', JSON.stringify(updatedMessages));
+        }
+      } catch (error) {
+        console.error('Ошибка сохранения статуса в localStorage:', error);
+      }
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -539,7 +711,8 @@ export default function AdminPage() {
     { id: 'applications', label: 'Заявки партнеров', icon: Building },
     { id: 'purchases', label: 'Покупки сертификатов', icon: Gift },
     { id: 'usages', label: 'Использования предложений', icon: Tag },
-    { id: 'hotels', label: 'Отели', icon: Hotel }
+    { id: 'hotels', label: 'Отели', icon: Hotel },
+    { id: 'support', label: 'Поддержка', icon: MessageCircle }
   ];
 
   return (
@@ -564,7 +737,8 @@ export default function AdminPage() {
               { id: 'dashboard', name: 'Дашборд', icon: BarChart3 },
               { id: 'applications', name: 'Заявки партнеров', icon: Building },
               { id: 'users', name: 'Пользователи', icon: Users },
-              { id: 'hotels', name: 'Отели', icon: Building2 }
+              { id: 'hotels', name: 'Отели', icon: Building2 },
+              { id: 'support', name: 'Поддержка', icon: MessageCircle }
             ].map((tab) => (
               <motion.button
                 key={tab.id}
@@ -649,6 +823,20 @@ export default function AdminPage() {
                   icon: Building2,
                   color: 'bg-indigo-500',
                   change: '+10%'
+                },
+                {
+                  title: 'Сообщения поддержки',
+                  value: supportMessages.length,
+                  icon: MessageCircle,
+                  color: 'bg-pink-500',
+                  change: '+5%'
+                },
+                {
+                  title: 'Новые обращения',
+                  value: supportMessages.filter(msg => msg.status === 'new').length,
+                  icon: AlertTriangle,
+                  color: 'bg-yellow-600',
+                  change: '+2%'
                 }
               ].map((stat, index) => (
                 <motion.div
@@ -1116,6 +1304,139 @@ export default function AdminPage() {
             </div>
           </motion.div>
         )}
+
+        {/* Support Tab */}
+        {activeTab === 'support' && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="space-y-6"
+          >
+            <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Сообщения поддержки ({supportMessages.length})
+                </h3>
+                <motion.button
+                  onClick={loadSupportMessages}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center"
+                >
+                  <MessageCircle className="w-4 h-4 mr-2" />
+                  Обновить
+                </motion.button>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Имя
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Email
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Тема
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Сообщение
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Приоритет
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Статус
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Дата
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Действия
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {supportMessages.map((message) => (
+                      <tr key={message.id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center">
+                            <div className="flex-shrink-0 w-8 h-8">
+                              <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                                {message.name.charAt(0).toUpperCase()}
+                              </div>
+                            </div>
+                            <div className="ml-3">
+                              <div className="text-sm font-medium text-gray-900">{message.name}</div>
+                              <div className="text-xs text-gray-500">ID: {message.id.slice(-8)}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900">{message.email}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900 max-w-xs truncate" title={message.subject}>
+                            {message.subject}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900 max-w-xs truncate" title={message.message}>
+                            {message.message}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                            message.priority === 'high' ? 'bg-red-100 text-red-800' :
+                            message.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                            'bg-green-100 text-green-800'
+                          }`}>
+                            {message.priority === 'high' ? 'Высокий' : message.priority === 'medium' ? 'Средний' : 'Низкий'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                            message.status === 'new' ? 'bg-yellow-100 text-yellow-800' :
+                            message.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
+                            'bg-green-100 text-green-800'
+                          }`}>
+                            {message.status === 'new' ? 'Новое' : message.status === 'in_progress' ? 'В обработке' : 'Решено'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {new Date(message.created_at).toLocaleDateString('ru-RU')}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                          <div className="flex space-x-2">
+                            <motion.button
+                              onClick={() => openResponseModal(message)}
+                              whileHover={{ scale: 1.1 }}
+                              whileTap={{ scale: 0.9 }}
+                              className="text-blue-600 hover:text-blue-900"
+                              title="Ответить"
+                            >
+                              <Reply className="w-5 h-5" />
+                            </motion.button>
+                            <motion.button
+                              onClick={() => handleUpdateMessageStatus(message.id, 'resolved')}
+                              whileHover={{ scale: 1.1 }}
+                              whileTap={{ scale: 0.9 }}
+                              className="text-green-600 hover:text-green-900"
+                              title="Отметить как решенное"
+                            >
+                              <CheckCircle className="w-5 h-5" />
+                            </motion.button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </motion.div>
+        )}
       </div>
 
       {/* Delete User Confirmation Modal */}
@@ -1217,6 +1538,19 @@ export default function AdminPage() {
           }}
           user={selectedUser}
           onSave={handleSaveUser}
+        />
+      )}
+
+      {/* Support Response Modal */}
+      {isResponseModalOpen && selectedSupportMessage && (
+        <SupportResponseModal
+          isOpen={isResponseModalOpen}
+          onClose={() => {
+            setIsResponseModalOpen(false);
+            setSelectedSupportMessage(null);
+          }}
+          message={selectedSupportMessage}
+          onSendResponse={(messageId, response) => handleSupportResponse(messageId, response)}
         />
       )}
     </div>

@@ -19,7 +19,7 @@ import {
   Utensils,
   Airplay,
   Dumbbell,
-  Spa,
+  Sparkles,
   Trash2
 } from 'lucide-react';
 
@@ -46,7 +46,7 @@ const availableAmenities = [
   { id: 'restaurant', name: 'Ресторан', icon: Utensils },
   { id: 'tv', name: 'Телевизор', icon: Airplay },
   { id: 'gym', name: 'Фитнес-центр', icon: Dumbbell },
-  { id: 'spa', name: 'СПА', icon: Spa }
+  { id: 'spa', name: 'СПА', icon: Sparkles }
 ];
 
 const categories = [

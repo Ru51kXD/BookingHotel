@@ -179,6 +179,57 @@ export class BookingService {
     userId: string
   ): Promise<{ success: boolean; error?: string }> {
     try {
+      // Сначала ищем в localStorage
+      if (typeof window !== 'undefined') {
+        const userBookings = this.getUserBookings(userId);
+        const bookingIndex = userBookings.findIndex(b => b.id === bookingId);
+        
+        if (bookingIndex === -1) {
+          return { success: false, error: 'Бронирование не найдено' };
+        }
+
+        const booking = userBookings[bookingIndex];
+
+        if (booking.userId !== userId) {
+          return { success: false, error: 'Нет доступа к этому бронированию' };
+        }
+
+        if (booking.status === 'completed' || booking.status === 'cancelled') {
+          return { success: false, error: 'Нельзя отменить это бронирование' };
+        }
+
+        // Проверяем, можно ли отменить (например, не менее чем за 24 часа)
+        const checkInDate = new Date(booking.checkIn);
+        const now = new Date();
+        const hoursUntilCheckIn = (checkInDate.getTime() - now.getTime()) / (1000 * 60 * 60);
+        
+        if (hoursUntilCheckIn < 24) {
+          return { 
+            success: false, 
+            error: 'Бронирование можно отменить не позднее чем за 24 часа до заезда' 
+          };
+        }
+
+        // Обновляем статус
+        booking.status = 'cancelled';
+        booking.updated_at = new Date().toISOString();
+
+        // Если платеж был проведен, помечаем возврат
+        if (booking.paymentStatus === 'paid') {
+          booking.paymentStatus = 'refunded';
+        }
+
+        // Сохраняем обновленный список
+        userBookings[bookingIndex] = booking;
+        localStorage.setItem(`bookings_${userId}`, JSON.stringify(userBookings));
+
+        // Также обновляем в Map
+        bookings.set(bookingId, booking);
+
+        return { success: true };
+      }
+
+      // Fallback для серверной части
       const booking = bookings.get(bookingId);
       if (!booking) {
         return { success: false, error: 'Бронирование не найдено' };
@@ -201,13 +252,6 @@ export class BookingService {
       }
 
       bookings.set(bookingId, booking);
-
-      // Обновляем localStorage
-      if (typeof window !== 'undefined') {
-        const userBookings = this.getUserBookings(userId);
-        const updatedBookings = userBookings.map(b => b.id === bookingId ? booking : b);
-        localStorage.setItem(`bookings_${userId}`, JSON.stringify(updatedBookings));
-      }
 
       return { success: true };
     } catch (error) {
