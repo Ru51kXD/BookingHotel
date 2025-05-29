@@ -211,7 +211,7 @@ function AnimatedLineChart({ data }: { data: ChartData[] }) {
         {/* Grid lines */}
         {[0, 1, 2, 3, 4].map(i => (
           <motion.line
-            key={i}
+            key={`grid-line-${i}`}
             x1="0"
             y1={30 * i}
             x2="300"
@@ -252,7 +252,7 @@ function AnimatedLineChart({ data }: { data: ChartData[] }) {
           const y = 150 - (item.value / maxValue) * 120;
           return (
             <motion.circle
-              key={index}
+              key={`data-point-${index}`}
               cx={x}
               cy={y}
               r="6"
@@ -330,7 +330,7 @@ export default function AnimatedChart({
           <div className="flex items-end justify-center space-x-4">
             {data.map((item, index) => (
               <AnimatedBar
-                key={index}
+                key={`bar-${index}`}
                 data={item}
                 maxValue={maxValue}
                 index={index}
@@ -354,7 +354,7 @@ export default function AnimatedChart({
         >
           {data.map((item, index) => (
             <motion.div
-              key={index}
+              key={`legend-${index}`}
               className="flex items-center"
               initial={{ opacity: 0, x: -20 }}
               whileInView={{ opacity: 1, x: 0 }}

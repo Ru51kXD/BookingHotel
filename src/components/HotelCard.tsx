@@ -121,7 +121,7 @@ export default function HotelCard({ hotel, className = '' }: HotelCardProps) {
   const renderStars = (rating: number) => {
     return Array.from({ length: 5 }, (_, i) => (
       <Star
-        key={i}
+        key={`star-${i}`}
         className={`w-3 h-3 ${
           i < Math.floor(rating) 
             ? 'text-amber-400 fill-current' 
@@ -210,7 +210,7 @@ export default function HotelCard({ hotel, className = '' }: HotelCardProps) {
                   
                   return (
                     <div
-                      key={index}
+                      key={`amenity-${index}-${amenity}`}
                       className="flex items-center bg-gray-100 px-2 py-1 rounded-lg"
                       title={label}
                     >

@@ -271,7 +271,7 @@ export default function BookingModal({ hotel, isOpen, onClose }: BookingModalPro
               className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
             >
               {[1,2,3,4,5,6,7,8,9,10].map(num => (
-                <option key={num} value={num}>{num} гостей</option>
+                <option key={`guests-${num}`} value={num}>{num} гостей</option>
               ))}
             </select>
           </div>
@@ -287,7 +287,7 @@ export default function BookingModal({ hotel, isOpen, onClose }: BookingModalPro
             className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
           >
             {[1,2,3,4,5].map(num => (
-              <option key={num} value={num}>{num} номеров</option>
+              <option key={`rooms-${num}`} value={num}>{num} номеров</option>
             ))}
           </select>
         </div>

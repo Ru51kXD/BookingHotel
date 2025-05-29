@@ -116,13 +116,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log('Сравнение email демо:', email === 'demo@example.com');
       console.log('Сравнение пароля демо:', password === DEMO_PASSWORD);
       
-      // Проверяем админский логин
-      if (email === 'admin@rulit.com' && password === ADMIN_PASSWORD) {
-        console.log('Админ вошел успешно!');
-        setUser(ADMIN_USER);
-        localStorage.setItem('hotel_user', JSON.stringify(ADMIN_USER));
+      // Проверяем, не существует ли уже пользователь с таким email
+      const registeredUsers = JSON.parse(localStorage.getItem('registered_users') || '[]');
+      const existingUser = registeredUsers.find((u: any) => u.email === email);
+      
+      if (existingUser && existingUser.password === password) {
+        const userForState: User = {
+          id: existingUser.id,
+          name: existingUser.name,
+          email: existingUser.email,
+          phone: existingUser.phone,
+          role: existingUser.role || 'user',
+          likedHotels: existingUser.likedHotels || [],
+          created_at: existingUser.created_at,
+          updated_at: existingUser.updated_at
+        };
+        
+        setUser(userForState);
+        localStorage.setItem('hotel_user', JSON.stringify(userForState));
         setIsLoading(false);
-        return { success: true, user: ADMIN_USER };
+        return { success: true, user: userForState };
+      }
+      
+      // Проверяем админа по умолчанию
+      if (email === 'admin@stayeasy.kz' && password === 'admin123') {
+        const adminUser: User = {
+          id: 'admin',
+          name: 'Администратор',
+          email: 'admin@stayeasy.kz',
+          role: 'admin',
+          likedHotels: [],
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+        
+        setUser(adminUser);
+        localStorage.setItem('hotel_user', JSON.stringify(adminUser));
+        setIsLoading(false);
+        return { success: true, user: adminUser };
       }
 
       // Проверяем демо-аккаунт
@@ -134,31 +165,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { success: true, user: DEMO_USER };
       }
 
-      // Симуляция API вызова для обычных пользователей
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Проверяем зарегистрированных пользователей
-      const registeredUsers = JSON.parse(localStorage.getItem('registered_users') || '[]');
-      const foundUser = registeredUsers.find((u: any) => u.email === email && u.password === password);
-      
-      if (foundUser) {
-        const userData: User = {
-          id: foundUser.id,
-          name: foundUser.name,
-          email: foundUser.email,
-          phone: foundUser.phone,
-          role: foundUser.role || 'user',
-          likedHotels: foundUser.likedHotels || [],
-          created_at: foundUser.created_at,
-          updated_at: foundUser.updated_at
-        };
-        
-        setUser(userData);
-        localStorage.setItem('hotel_user', JSON.stringify(userData));
-        setIsLoading(false);
-        return { success: true, user: userData };
-      }
-      
       // Mock login logic - в реальном приложении здесь будет API вызов
       if (email === 'user@example.com' && password === 'password') {
         const userData: User = {
@@ -209,7 +215,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         name: userData.name,
         email: userData.email,
         phone: userData.phone,
-        role: 'user',
+        role: userData.email === 'admin@stayeasy.kz' ? 'admin' : 'user', // Делаем админом если email admin@stayeasy.kz
         likedHotels: [],
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()

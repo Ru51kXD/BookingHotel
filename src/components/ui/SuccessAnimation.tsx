@@ -92,7 +92,7 @@ export default function SuccessAnimation({
           {/* Конфетти */}
           {confettiPieces.map((piece) => (
             <motion.div
-              key={piece.id}
+              key={`confetti-${piece.id}`}
               className="absolute w-3 h-3 rounded-full"
               style={{
                 backgroundColor: piece.color,
@@ -130,7 +130,7 @@ export default function SuccessAnimation({
               {/* Блестящие звезды */}
               {Array.from({ length: 20 }).map((_, i) => (
                 <motion.div
-                  key={i}
+                  key={`success-star-${i}`}
                   className="absolute"
                   style={{
                     left: `${Math.random() * 100}%`,

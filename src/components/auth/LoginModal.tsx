@@ -6,6 +6,7 @@ import { X, Mail, Lock, Eye, EyeOff, Loader, CheckCircle, Sparkles, ArrowRight, 
 import { useAuth } from '@/lib/auth';
 import { useRouter } from 'next/navigation';
 import ForgotPasswordModal from './ForgotPasswordModal';
+import React from 'react';
 
 interface LoginModalProps {
   isOpen: boolean;
@@ -114,7 +115,7 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
           {/* Летающие сердечки */}
           {[...Array(5)].map((_, i) => (
             <motion.div
-              key={i}
+              key={`heart-${i}`}
               initial={{ scale: 0, opacity: 0 }}
               animate={{ 
                 scale: [0, 1, 0],
@@ -174,7 +175,7 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
         transition={{ delay: 0.6 }}
         className="grid grid-cols-3 gap-4 mb-8"
       >
-        <div className="text-center">
+        <div key="action-hotels" className="text-center">
           <motion.div 
             whileHover={{ scale: 1.1 }}
             className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mx-auto mb-2 cursor-pointer"
@@ -184,7 +185,7 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
           </motion.div>
           <p className="text-sm text-gray-600">Найти<br />отели</p>
         </div>
-        <div className="text-center">
+        <div key="action-account" className="text-center">
           <motion.div 
             whileHover={{ scale: 1.1 }}
             className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center mx-auto mb-2 cursor-pointer"
@@ -194,7 +195,7 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
           </motion.div>
           <p className="text-sm text-gray-600">Личный<br />кабинет</p>
         </div>
-        <div className="text-center">
+        <div key="action-destinations" className="text-center">
           <motion.div 
             whileHover={{ scale: 1.1 }}
             className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center mx-auto mb-2 cursor-pointer"
@@ -286,7 +287,7 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
               </motion.button>
 
               {isSuccess ? renderSuccessScreen() : (
-                <>
+                <React.Fragment key="login-form">
                   {/* Header */}
                   <div className="text-center mb-8">
                     <motion.div
@@ -304,7 +305,7 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
                   {/* Form */}
                   <form onSubmit={handleSubmit} className="space-y-6">
                     {/* Email */}
-                    <div>
+                    <div key="email-field">
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         Email
                       </label>
@@ -322,7 +323,7 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
                     </div>
 
                     {/* Password */}
-                    <div>
+                    <div key="password-field">
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         Пароль
                       </label>
@@ -360,6 +361,7 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
                     {/* Error Message */}
                     {error && (
                       <motion.div
+                        key="error-message"
                         initial={{ opacity: 0, y: -10 }}
                         animate={{ opacity: 1, y: 0 }}
                         className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl text-sm"
@@ -370,6 +372,7 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
 
                     {/* Submit Button */}
                     <motion.button
+                      key="submit-button"
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                       type="submit"
@@ -377,10 +380,10 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
                       className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white py-3 rounded-xl font-semibold hover:from-blue-600 hover:to-purple-700 transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center"
                     >
                       {isLoading ? (
-                        <>
+                        <React.Fragment key="loading">
                           <Loader className="w-5 h-5 mr-2 animate-spin" />
                           Вход...
-                        </>
+                        </React.Fragment>
                       ) : (
                         'Войти'
                       )}
@@ -388,7 +391,7 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
                   </form>
 
                   {/* Footer */}
-                  <div className="mt-8 text-center">
+                  <div key="footer" className="mt-8 text-center">
                     <p className="text-gray-600">
                       Нет аккаунта?{' '}
                       <button
@@ -401,14 +404,14 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
                   </div>
 
                   {/* Demo Account */}
-                  <div className="mt-6 p-4 bg-blue-50 rounded-xl border border-blue-200">
+                  <div key="demo-account" className="mt-6 p-4 bg-blue-50 rounded-xl border border-blue-200">
                     <p className="text-blue-800 text-sm text-center">
                       <strong>Демо-аккаунт:</strong><br />
                       Email: demo@example.com<br />
                       Пароль: demo123
                     </p>
                   </div>
-                </>
+                </React.Fragment>
               )}
             </div>
           </motion.div>

@@ -308,7 +308,7 @@ export default function Home() {
                   { number: '24/7', label: 'Поддержка', icon: '🛎️' }
                 ].map((stat, index) => (
                   <motion.div
-                    key={index}
+                    key={`stat-${index}`}
                     className="text-center p-6 bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20"
                     whileHover={{ 
                       scale: 1.05, 
@@ -350,7 +350,7 @@ export default function Home() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
             {features.map((feature, index) => (
               <motion.div
-                key={index}
+                key={`feature-${index}`}
                 variants={itemVariants}
                 className="text-center p-8 bg-gradient-to-br from-gray-50 to-white rounded-3xl shadow-lg border border-gray-100 group"
                 whileHover={{ 
@@ -430,7 +430,7 @@ export default function Home() {
               { icon: '⭐', title: '4.9+ рейтинг', desc: 'Средняя оценка' }
             ].map((stat, index) => (
               <motion.div
-                key={index}
+                key={`stat-${index}`}
                 className="text-center p-6 bg-white/60 backdrop-blur-sm rounded-2xl border border-white/40 shadow-lg"
                 whileHover={{ 
                   scale: 1.05, 

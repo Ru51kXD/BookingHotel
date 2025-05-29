@@ -116,7 +116,7 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
           {/* Анимированные частицы */}
           {[...Array(6)].map((_, i) => (
             <motion.div
-              key={i}
+              key={`register-particle-${i}`}
               initial={{ scale: 0, opacity: 0 }}
               animate={{ 
                 scale: [0, 1, 0],

@@ -89,7 +89,7 @@ export default function Footer() {
             <div className="flex space-x-4">
               {socialLinks.map((social, index) => (
                 <motion.a
-                  key={index}
+                  key={`social-${index}`}
                   href={social.href}
                   aria-label={social.label}
                   whileHover={{ scale: 1.1, color: '#fff' }}
@@ -103,7 +103,7 @@ export default function Footer() {
 
           {/* Разделы */}
           {sections.map((section, index) => (
-            <motion.div key={index} variants={childVariants}>
+            <motion.div key={`section-${index}`} variants={childVariants}>
               <Link href={section.mainHref}>
                 <h3 className="font-semibold text-lg mb-4 hover:text-white transition-colors cursor-pointer">
                   {section.title}
@@ -111,7 +111,7 @@ export default function Footer() {
               </Link>
               <ul className="space-y-2">
                 {section.links.map((link, linkIndex) => (
-                  <li key={linkIndex}>
+                  <li key={`link-${index}-${linkIndex}`}>
                     <Link
                       href={link.href}
                       className="text-indigo-200 hover:text-white transition-colors"

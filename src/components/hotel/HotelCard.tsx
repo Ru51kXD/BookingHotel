@@ -165,14 +165,11 @@ export default function HotelCard({
         <div className="mb-4">
           <div className="flex flex-wrap gap-1">
             {amenities.slice(0, 4).map((amenity, idx) => (
-              <span
-                key={idx}
-                className="inline-flex items-center bg-gray-100 text-gray-700 px-2 py-1 rounded-md text-xs font-medium"
+              <span 
+                key={`hotel-amenity-${idx}-${amenity}`}
+                className="inline-flex items-center px-2 py-1 bg-blue-50 text-blue-700 text-xs rounded-full"
               >
-                {amenityIcons[amenity] && (
-                  <span className="mr-1">{amenityIcons[amenity]}</span>
-                )}
-                {amenity.charAt(0).toUpperCase() + amenity.slice(1)}
+                {amenity}
               </span>
             ))}
             {amenities.length > 4 && (

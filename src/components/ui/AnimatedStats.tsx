@@ -159,28 +159,54 @@ export default function AnimatedStats({ className = '' }: AnimatedStatsProps) {
           transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
         />
         
-        {/* Floating Particles */}
-        {[...Array(20)].map((_, i) => (
-          <motion.div
-            key={i}
-            className="absolute w-2 h-2 bg-white rounded-full opacity-20"
-            style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-            }}
-            animate={{
-              y: [-20, -100, -20],
-              opacity: [0.2, 0.8, 0.2],
-              scale: [1, 1.5, 1],
-            }}
-            transition={{
-              duration: 3 + Math.random() * 2,
-              repeat: Infinity,
-              delay: Math.random() * 2,
-              ease: "easeInOut"
-            }}
-          />
-        ))}
+        {/* Анимированные частицы фона */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          {/* Floating Particles */}
+          {[...Array(20)].map((_, i) => (
+            <motion.div
+              key={`floating-particle-${i}`}
+              className="absolute w-2 h-2 bg-white rounded-full opacity-20"
+              style={{
+                left: `${Math.random() * 100}%`,
+                top: `${Math.random() * 100}%`,
+              }}
+              animate={{
+                y: [-20, -100, -20],
+                opacity: [0.2, 0.8, 0.2],
+                scale: [1, 1.5, 1],
+              }}
+              transition={{
+                duration: 3 + Math.random() * 2,
+                repeat: Infinity,
+                delay: Math.random() * 2,
+                ease: "easeInOut"
+              }}
+            />
+          ))}
+
+          {/* Background Particles */}
+          {[...Array(20)].map((_, i) => (
+            <motion.div
+              key={`bg-particle-${i}`}
+              className="absolute w-2 h-2 bg-white/10 rounded-full"
+              style={{
+                left: `${Math.random() * 100}%`,
+                top: `${Math.random() * 100}%`,
+              }}
+              animate={{
+                y: [0, -100, 0],
+                opacity: [0, 0.5, 0],
+                scale: [1, 1.5, 1],
+              }}
+              transition={{
+                duration: 8 + Math.random() * 4,
+                repeat: Infinity,
+                delay: Math.random() * 5,
+                ease: "easeInOut"
+              }}
+            />
+          ))}
+        </div>
       </div>
 
       <div className="container mx-auto px-4 relative z-10">
@@ -217,7 +243,7 @@ export default function AnimatedStats({ className = '' }: AnimatedStatsProps) {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {statsData.map((stat, index) => (
             <motion.div
-              key={index}
+              key={`stat-card-${index}`}
               initial={{ opacity: 0, y: 100, rotateY: -30 }}
               whileInView={{ opacity: 1, y: 0, rotateY: 0 }}
               viewport={{ once: true, margin: "-50px" }}
@@ -331,11 +357,11 @@ export default function AnimatedStats({ className = '' }: AnimatedStatsProps) {
                   />
                 </motion.div>
 
-                {/* Interactive Particles */}
+                {/* Интерактивные частицы */}
                 <div className="absolute inset-0 pointer-events-none">
                   {[...Array(5)].map((_, i) => (
                     <motion.div
-                      key={i}
+                      key={`stats-particle-${index}-${i}`}
                       className="absolute w-1 h-1 bg-white rounded-full opacity-0 group-hover:opacity-60"
                       style={{
                         left: `${20 + i * 15}%`,

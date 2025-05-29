@@ -234,6 +234,139 @@ class DatabaseManager {
     });
   }
 
+  // Создать новый отель
+  async createHotel(hotelData: Omit<Hotel, 'id' | 'created_at'>): Promise<Hotel> {
+    return new Promise((resolve, reject) => {
+      if (!this.db) {
+        reject(new Error('База данных не инициализирована'));
+        return;
+      }
+
+      const { name, category, city, address, price_per_night, rating, image_url, description, amenities } = hotelData;
+
+      this.db.run(
+        `INSERT INTO hotels (name, category, city, address, price_per_night, rating, image_url, description, amenities)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [name, category, city, address, price_per_night, rating, image_url, description, amenities],
+        function(err) {
+          if (err) {
+            reject(err);
+          } else {
+            // Получаем созданный отель
+            const insertedId = this.lastID;
+            resolve({
+              id: insertedId,
+              ...hotelData,
+              created_at: new Date().toISOString()
+            });
+          }
+        }
+      );
+    });
+  }
+
+  // Обновить отель
+  async updateHotel(id: number, hotelData: Partial<Omit<Hotel, 'id' | 'created_at'>>): Promise<Hotel | null> {
+    return new Promise((resolve, reject) => {
+      if (!this.db) {
+        reject(new Error('База данных не инициализирована'));
+        return;
+      }
+
+      const fields = [];
+      const values = [];
+      
+      if (hotelData.name !== undefined) {
+        fields.push('name = ?');
+        values.push(hotelData.name);
+      }
+      if (hotelData.category !== undefined) {
+        fields.push('category = ?');
+        values.push(hotelData.category);
+      }
+      if (hotelData.city !== undefined) {
+        fields.push('city = ?');
+        values.push(hotelData.city);
+      }
+      if (hotelData.address !== undefined) {
+        fields.push('address = ?');
+        values.push(hotelData.address);
+      }
+      if (hotelData.price_per_night !== undefined) {
+        fields.push('price_per_night = ?');
+        values.push(hotelData.price_per_night);
+      }
+      if (hotelData.rating !== undefined) {
+        fields.push('rating = ?');
+        values.push(hotelData.rating);
+      }
+      if (hotelData.image_url !== undefined) {
+        fields.push('image_url = ?');
+        values.push(hotelData.image_url);
+      }
+      if (hotelData.description !== undefined) {
+        fields.push('description = ?');
+        values.push(hotelData.description);
+      }
+      if (hotelData.amenities !== undefined) {
+        fields.push('amenities = ?');
+        values.push(hotelData.amenities);
+      }
+
+      if (fields.length === 0) {
+        reject(new Error('Нет полей для обновления'));
+        return;
+      }
+
+      values.push(id);
+
+      this.db.run(
+        `UPDATE hotels SET ${fields.join(', ')} WHERE id = ?`,
+        values,
+        function(err) {
+          if (err) {
+            reject(err);
+          } else if (this.changes === 0) {
+            resolve(null); // Отель не найден
+          } else {
+            // Получаем обновленный отель
+            resolve({
+              id,
+              name: hotelData.name || '',
+              category: hotelData.category || '',
+              city: hotelData.city || '',
+              address: hotelData.address || '',
+              price_per_night: hotelData.price_per_night || 0,
+              rating: hotelData.rating || 0,
+              image_url: hotelData.image_url || '',
+              description: hotelData.description || '',
+              amenities: hotelData.amenities || '',
+              created_at: new Date().toISOString()
+            });
+          }
+        }
+      );
+    });
+  }
+
+  // Удалить отель
+  async deleteHotel(id: number): Promise<boolean> {
+    return new Promise((resolve, reject) => {
+      if (!this.db) {
+        reject(new Error('База данных не инициализирована'));
+        return;
+      }
+
+      this.db.run('DELETE FROM hotels WHERE id = ?', [id], function(err) {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(this.changes > 0); // true если отель был удален
+        }
+      });
+    });
+  }
+
   // Закрыть соединение с базой данных
   close() {
     if (this.db) {
@@ -246,6 +379,17 @@ class DatabaseManager {
       });
     }
   }
+}
+
+// Функция для инициализации базы данных (для использования в API)
+export async function initializeDatabase() {
+  return new Promise<void>((resolve, reject) => {
+    const dbManager = new DatabaseManager();
+    // Даем время на инициализацию
+    setTimeout(() => {
+      resolve();
+    }, 1000);
+  });
 }
 
 // Экспортируем единственный экземпляр
