@@ -169,7 +169,21 @@ export default function Home() {
   const handleSearch = () => {
     // Перенаправляем на страницу отелей с параметрами поиска
     const params = new URLSearchParams();
-    if (searchData.destination) params.append('q', searchData.destination);
+    
+    if (searchData.destination) {
+      // Проверяем, является ли введенный текст названием страны
+      const isCountry = popularDestinations.some(
+        dest => dest.country.toLowerCase() === searchData.destination.toLowerCase()
+      );
+      
+      // Если это страна, добавляем параметр country, иначе общий параметр q
+      if (isCountry) {
+        params.append('country', searchData.destination);
+      } else {
+        params.append('q', searchData.destination);
+      }
+    }
+    
     if (searchData.checkIn) params.append('checkIn', searchData.checkIn);
     if (searchData.checkOut) params.append('checkOut', searchData.checkOut);
     if (searchData.guests) params.append('guests', searchData.guests.toString());

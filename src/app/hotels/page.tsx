@@ -35,6 +35,7 @@ function HotelsPageContent() {
     search: searchParams.get('q') || '',
     category: searchParams.get('category') || '',
     city: searchParams.get('city') || '',
+    country: searchParams.get('country') || '',
     minPrice: '',
     maxPrice: '',
     minRating: '',
@@ -74,6 +75,7 @@ function HotelsPageContent() {
       if (filters.search) params.append('q', filters.search);
       if (filters.category) params.append('category', filters.category);
       if (filters.city) params.append('city', filters.city);
+      if (filters.country) params.append('country', filters.country);
 
       const response = await fetch(`/api/hotels?${params.toString()}`);
       const data = await response.json();
@@ -136,6 +138,7 @@ function HotelsPageContent() {
       search: '',
       category: '',
       city: '',
+      country: '',
       minPrice: '',
       maxPrice: '',
       minRating: '',

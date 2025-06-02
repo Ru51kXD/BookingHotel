@@ -101,7 +101,19 @@ export default function HotelSearch({ className = '' }: HotelSearchProps) {
     setLoading(true);
     try {
       const params = new URLSearchParams();
-      if (searchQuery) params.append('q', searchQuery);
+      
+      // Проверяем, является ли текст поиска названием страны
+      const isCountry = searchDestinations('').some(
+        dest => dest.country.toLowerCase() === searchQuery.toLowerCase()
+      );
+      
+      // Если это страна, добавляем параметр country, иначе общие параметры
+      if (isCountry) {
+        params.append('country', searchQuery);
+      } else if (searchQuery) {
+        params.append('q', searchQuery);
+      }
+      
       if (selectedCategory) params.append('category', selectedCategory);
       if (selectedCity) params.append('city', selectedCity);
 
@@ -130,7 +142,14 @@ export default function HotelSearch({ className = '' }: HotelSearchProps) {
   };
 
   const handleSuggestionClick = (destination: any) => {
-    setSelectedCity(destination.label);
+    // Если это название страны, устанавливаем его в поле поиска,
+    // а город очищаем для правильного поиска по стране
+    if (destination.city === destination.country) {
+      setSearchQuery(destination.country);
+      setSelectedCity('');
+    } else {
+      setSelectedCity(destination.city);
+    }
     setShowSuggestions(false);
   };
 

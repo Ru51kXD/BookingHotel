@@ -139,7 +139,7 @@ class DatabaseManager {
   }
 
   // Поиск отелей
-  async searchHotels(query: string, category?: string, city?: string): Promise<Hotel[]> {
+  async searchHotels(query: string, category?: string, city?: string, country?: string): Promise<Hotel[]> {
     return new Promise((resolve, reject) => {
       if (!this.db) {
         reject(new Error('База данных не инициализирована'));
@@ -150,8 +150,8 @@ class DatabaseManager {
       const params: any[] = [];
 
       if (query) {
-        sql += ' AND (name LIKE ? OR description LIKE ? OR city LIKE ?)';
-        params.push(`%${query}%`, `%${query}%`, `%${query}%`);
+        sql += ' AND (name LIKE ? OR description LIKE ? OR city LIKE ? OR address LIKE ?)';
+        params.push(`%${query}%`, `%${query}%`, `%${query}%`, `%${query}%`);
       }
 
       if (category) {
@@ -162,6 +162,11 @@ class DatabaseManager {
       if (city) {
         sql += ' AND city LIKE ?';
         params.push(`%${city}%`);
+      }
+
+      if (country) {
+        sql += ' AND (address LIKE ? OR city LIKE ? OR description LIKE ?)';
+        params.push(`%${country}%`, `%${country}%`, `%${country}%`);
       }
 
       sql += ' ORDER BY rating DESC';

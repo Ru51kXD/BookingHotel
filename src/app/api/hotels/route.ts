@@ -7,11 +7,12 @@ export async function GET(request: NextRequest) {
     const query = searchParams.get('q') || '';
     const category = searchParams.get('category') || '';
     const city = searchParams.get('city') || '';
+    const country = searchParams.get('country') || '';
 
     let hotels;
     
-    if (query || category || city) {
-      hotels = await dbManager.searchHotels(query, category || undefined, city || undefined);
+    if (query || category || city || country) {
+      hotels = await dbManager.searchHotels(query, category || undefined, city || undefined, country || undefined);
     } else {
       hotels = await dbManager.getAllHotels();
     }
