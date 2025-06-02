@@ -4,10 +4,12 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
-import { ArrowLeft, MapPin, Star, Wifi, Car, Utensils, Coffee, Dumbbell, Shield, Phone } from 'lucide-react';
+import { ArrowLeft, MapPin, Star, Wifi, Car, Utensils, Coffee, Dumbbell, Shield, Phone, Heart } from 'lucide-react';
 import { motion } from '@/lib/motion';
 import { useCurrency } from '@/lib/currency';
 import { createPlaceholderImage, createImageErrorHandler } from '@/lib/imageUtils';
+import { useAuth } from '@/lib/auth';
+import BookingModal from '@/components/BookingModal';
 
 interface Hotel {
   id: number | string;
@@ -25,9 +27,15 @@ interface Hotel {
 export default function HotelDetailPage() {
   const params = useParams();
   const { formatPrice } = useCurrency();
+  const { user, toggleLikeHotel, getLikedHotels } = useAuth();
   const [hotel, setHotel] = useState<Hotel | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [showBookingModal, setShowBookingModal] = useState(false);
+  const [isLiking, setIsLiking] = useState(false);
+  
+  const likedHotels = getLikedHotels();
+  const isLiked = hotel ? likedHotels.includes(hotel.id.toString()) : false;
 
   useEffect(() => {
     if (params.id) {
@@ -120,6 +128,32 @@ export default function HotelDetailPage() {
       'boutique': 'Бутик'
     };
     return categories[category] || category;
+  };
+
+  const handleBookNow = () => {
+    if (!user) {
+      alert('Пожалуйста, войдите в систему для бронирования');
+      return;
+    }
+    setShowBookingModal(true);
+  };
+
+  const handleToggleFavorite = async () => {
+    if (!hotel) return;
+    
+    if (!user) {
+      alert('Пожалуйста, войдите в систему, чтобы добавлять отели в избранное');
+      return;
+    }
+
+    setIsLiking(true);
+    try {
+      await toggleLikeHotel(hotel.id.toString());
+    } catch (error) {
+      console.error('Ошибка при изменении избранного:', error);
+    } finally {
+      setIsLiking(false);
+    }
   };
 
   if (loading) {
@@ -245,6 +279,7 @@ export default function HotelDetailPage() {
             <div className="border-t pt-8">
               <div className="flex flex-col sm:flex-row gap-4">
                 <motion.button
+                  onClick={handleBookNow}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   className="flex-1 bg-blue-600 text-white py-4 px-6 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
@@ -253,11 +288,18 @@ export default function HotelDetailPage() {
                 </motion.button>
                 
                 <motion.button
+                  onClick={handleToggleFavorite}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  className="flex-1 border-2 border-blue-600 text-blue-600 py-4 px-6 rounded-lg font-semibold hover:bg-blue-50 transition-colors"
+                  disabled={isLiking}
+                  className={`flex-1 py-4 px-6 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2
+                    ${isLiked 
+                      ? 'bg-red-50 text-red-600 border-2 border-red-500' 
+                      : 'border-2 border-blue-600 text-blue-600 hover:bg-blue-50'
+                    }`}
                 >
-                  Добавить в избранное
+                  <Heart className={`w-5 h-5 ${isLiked ? 'fill-red-500' : ''} ${isLiking ? 'animate-pulse' : ''}`} />
+                  {isLiked ? 'В избранном' : 'Добавить в избранное'}
                 </motion.button>
               </div>
               
@@ -268,6 +310,15 @@ export default function HotelDetailPage() {
           </div>
         </motion.div>
       </div>
+
+      {/* Booking Modal */}
+      {hotel && (
+        <BookingModal
+          hotel={hotel}
+          isOpen={showBookingModal}
+          onClose={() => setShowBookingModal(false)}
+        />
+      )}
     </div>
   );
 } 
